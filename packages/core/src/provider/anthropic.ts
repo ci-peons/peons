@@ -16,7 +16,7 @@ export class AnthropicProvider implements Provider {
     let res: Anthropic.Message;
     try {
       res = await this.client.messages.create({
-        model: input.model, max_tokens: 4096, temperature: 0,
+        model: input.model, max_tokens: 4096,
         system: input.system.map((b) => ({ type: "text" as const, text: b.text, ...(b.cache ? { cache_control: { type: "ephemeral" as const } } : {}) })),
         tools: [{ name: input.toolName, description: input.toolDescription, input_schema: input.schema as Anthropic.Tool.InputSchema }],
         tool_choice: { type: "tool", name: input.toolName },
