@@ -3,3 +3,5 @@ export * from "./severity.ts";
 export * from "./name.ts";
 export * from "./glob.ts";
 export * from "./manifest.ts";
+export * from "./body.ts";
+export * from "./peon.ts";
