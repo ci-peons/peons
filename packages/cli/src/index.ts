@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { Command } from "commander";
-import { EngineError } from "@peons/core";
+import { EngineError, loadConfig } from "@peons/core";
 import { isTTYMode } from "./mode.ts";
 import { init } from "./commands/init.ts";
 import { list } from "./commands/list.ts";
@@ -12,10 +10,12 @@ import { testCommand, type TestOpts } from "./commands/test.ts";
 
 export type Ctx = { cwd: string; stdout: (s: string) => void; stderr: (s: string) => void };
 
-export function splitNamesAndFiles(args: string[], cwd: string, scope?: string): { names: string[]; files: string[] } {
-  if (scope !== "files") return { names: args, files: [] };
+// Classifies each positional arg against the *configured* peon names rather than disk existence:
+// a peon whose name happens to match an existing path (e.g. a peon named "peons" in a repo with a
+// peons/ directory) must never be misrouted into the file list.
+export function splitNamesAndFiles(args: string[], peonNames: string[], scope?: string): { names: string[]; files: string[] } {
   const names: string[] = []; const files: string[] = [];
-  for (const a of args) (files.length || existsSync(join(cwd, a)) ? files : names).push(a);
+  for (const a of args) (peonNames.includes(a) || scope !== "files" ? names : files).push(a);
   return { names, files };
 }
 
@@ -40,15 +40,22 @@ export async function runCli(argv: string[], ctx: Ctx, deps: Partial<Deps> = {})
     .option("--scope <s>", "staged | branch | files").option("--base <ref>").option("--format <f>", "agent | json | sarif")
     .option("--fail-on <severity>").option("--all-files", "ignore path matching for named peons").option("--no-cache")
     .allowExcessArguments(true)
-    .action((names: string[], o: RunOpts) => wrap(() => {
-      // with --scope files, positional args after the peon names are file paths: split on the first arg that exists on disk
-      const { names: n, files } = splitNamesAndFiles(names, ctx.cwd, o.scope);
-      return runCommand(n, files, o, ctx, { provider: deps.provider, tty: deps.tty ?? isTTYMode(o) });
+    .action((names: string[], o: RunOpts) => wrap(async () => {
+      const config = await loadConfig(ctx.cwd);
+      const { names: n, files } = splitNamesAndFiles(names, config.peons.map((p) => p.name), o.scope);
+      return runCommand(n, files, o, ctx, { provider: deps.provider, tty: deps.tty ?? isTTYMode(o) }, config);
     })());
   program.command("test [names...]").description("Run fixtures and report recall and precision")
     .option("--runs <n>").option("--min-precision <f>").option("--min-recall <f>").option("--format <f>", "json")
     .action((names: string[], o: TestOpts) => wrap(() => testCommand(names, o, ctx, { provider: deps.provider, tty: deps.tty ?? isTTYMode(o) }))());
-  try { await program.parseAsync(argv, { from: "user" }); } catch (e) { const err = e as { code?: string; exitCode?: number }; if (err.code === "commander.helpDisplayed" || err.code === "commander.version") return 0; return err.exitCode ?? 2; }
+  try { await program.parseAsync(argv, { from: "user" }); }
+  catch (e) {
+    // commander's own usage errors (unknown command/option, missing argument, ...) default to
+    // exitCode 1, which on this CLI means "a finding meets the block severity" — normalise every
+    // CommanderError other than a plain --help/--version display to exit 2 (engine/usage failure).
+    const err = e as { code?: string };
+    return err.code === "commander.helpDisplayed" || err.code === "commander.version" ? 0 : 2;
+  }
   return code;
 }
 

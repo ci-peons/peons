@@ -1,4 +1,4 @@
-import { run, formatResult, FORMATS, type FormatName, type Provider } from "@peons/core";
+import { run, formatResult, FORMATS, type FormatName, type Provider, type ResolvedConfig } from "@peons/core";
 import { SeveritySchema, type Severity } from "@peons/schema";
 import type { Ctx } from "../index.ts";
 import { parseScope } from "./plan.ts";
@@ -15,10 +15,10 @@ export function validateRunOpts(o: RunOpts): { format: FormatName; failOn?: Seve
   if (sev && !sev.success) throw new Error(`unknown severity "${o.failOn}" (${SeveritySchema.options.join(" | ")})`);
   return { format, failOn: sev?.success ? sev.data : undefined };
 }
-export async function runCommand(names: string[], files: string[], o: RunOpts, ctx: Ctx, deps: Deps): Promise<number> {
+export async function runCommand(names: string[], files: string[], o: RunOpts, ctx: Ctx, deps: Deps, config: ResolvedConfig): Promise<number> {
   const { format, failOn } = validateRunOpts(o);
   const scope = parseScope(o.scope, o.base, files);
-  const opts = { root: ctx.cwd, scope, names: names.length ? names : undefined, allFiles: o.allFiles, failOn, noCache: o.cache === false, surface: process.env.CI ? "ci" as const : "cli" as const, provider: deps.provider };
+  const opts = { root: ctx.cwd, scope, names: names.length ? names : undefined, allFiles: o.allFiles, failOn, noCache: o.cache === false, surface: process.env.CI ? "ci" as const : "cli" as const, provider: deps.provider, config };
   if (deps.tty) {
     // @ts-expect-error created in Task 20
     const { renderRun } = await import("../ui/RunView.tsx");
