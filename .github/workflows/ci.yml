@@ -1,5 +1,12 @@
 name: ci
-on: { push: { branches: [main] }, pull_request: {} }
+on:
+  push: { branches: [main] }
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      peons:
+        description: "Space-separated peon names to score; empty scores all"
+        default: ""
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,15 +19,41 @@ jobs:
       - run: bun test
       - run: bun run build
   peons-fixtures:
-    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    # Scores only the peons a pull request changed, so a broken peon cannot merge
+    # and unchanged peons cost nothing. Manual runs (workflow_dispatch) score all.
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun packages/cli/src/index.ts test --runs 2 --format json > peons-test.json
-        env: { PEONS_API_KEY: "${{ secrets.PEONS_API_KEY }}" }
+      - id: changed
+        name: Work out which peons to score
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            names="${{ github.event.inputs.peons }}"
+          else
+            names=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- peons/ | awk -F/ 'NF>1 {print $2}' | sort -u | tr '\n' ' ')
+          fi
+          # Only plain peon directory names may reach the next step.
+          for n in $names; do
+            case "$n" in *[!A-Za-z0-9_-]*) echo "invalid peon name: $n"; exit 1;; esac
+          done
+          echo "names=${names}" >> "$GITHUB_OUTPUT"
+          if [ -z "${names// }" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "No peon changed; nothing to score."
+          fi
+      - name: Score changed peons against the live model
+        if: steps.changed.outputs.skip != 'true'
+        env:
+          PEONS_API_KEY: ${{ secrets.PEONS_API_KEY }}
+          NAMES: ${{ steps.changed.outputs.names }}
+        run: |
+          case "$NAMES" in *[!A-Za-z0-9_\ -]*) echo "invalid peon name"; exit 1;; esac
+          bun packages/cli/src/index.ts test $NAMES --runs 2 --format json > peons-test.json
       - uses: actions/upload-artifact@v4
+        if: steps.changed.outputs.skip != 'true'
         with: { name: peons-test, path: peons-test.json }
   dogfood:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
