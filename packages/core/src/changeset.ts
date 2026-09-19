@@ -15,8 +15,8 @@ function statusOf(code: string): ChangedFile["status"] | null {
 
 async function fromGit(root: string, scope: ScopeSpec, diffArgs: string[], showRef: string): Promise<Omit<ChangeSet, "scope" | "base">> {
   const warnings: string[] = [];
-  const nameStatus = await git(root, ["diff", "--name-status", "-M", "--no-renames", ...diffArgs]);
-  const hunks = parseUnifiedDiff(await git(root, ["diff", "--unified=3", "--no-color", "--no-ext-diff", ...diffArgs]));
+  const nameStatus = await git(root, ["diff", "--name-status", "-M", ...diffArgs]);
+  const hunks = parseUnifiedDiff(await git(root, ["diff", "--unified=3", "--no-color", "--no-ext-diff", "-M", ...diffArgs]));
   const files: ChangedFile[] = [];
   for (const line of nameStatus.split("\n").filter(Boolean)) {
     const [code, ...rest] = line.split("\t"); const path = rest[rest.length - 1]!;

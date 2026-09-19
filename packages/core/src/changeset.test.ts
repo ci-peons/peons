@@ -26,6 +26,24 @@ test("staged scope: added, modified, deleted excluded", async () => {
   expect(cs.files[0]!.content).toBe("one\ntwo\nthree\n");
   expect(cs.files[0]!.hunks.length).toBe(1);
 });
+test("staged scope: renamed and modified file is reported as renamed with a partial hunk", async () => {
+  const root = mkdtempSync(join(tmpdir(), "cs-"));
+  const g = (...a: string[]) => execFileSync("git", a, { cwd: root, stdio: "pipe" });
+  g("init", "-q", "-b", "main"); g("config", "user.email", "t@t"); g("config", "user.name", "t");
+  mkdirSync(join(root, "src"));
+  const original = Array.from({ length: 10 }, (_, i) => `l${i + 1}`);
+  writeFileSync(join(root, "src/a.tsx"), original.join("\n") + "\n");
+  g("add", "."); g("commit", "-qm", "init");
+  g("mv", "src/a.tsx", "src/moved.tsx");
+  const updated = [...original, "l11"];
+  writeFileSync(join(root, "src/moved.tsx"), updated.join("\n") + "\n");
+  g("add", ".");
+  const cs = await computeChangeSet(root, { kind: "staged" });
+  expect(cs.files.map((f) => [f.path, f.status])).toEqual([["src/moved.tsx", "renamed"]]);
+  expect(cs.files[0]!.content).toBe(updated.join("\n") + "\n");
+  expect(cs.files[0]!.hunks.length).toBe(1);
+  expect(cs.files[0]!.hunks[0]!.newLines).toBeLessThan(updated.length);
+});
 test("branch scope diffs against merge base", async () => {
   const root = repo();
   const g = (...a: string[]) => execFileSync("git", a, { cwd: root, stdio: "pipe" });
