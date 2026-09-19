@@ -7,10 +7,14 @@ export function resolveApiKey(env: NodeJS.ProcessEnv = process.env): string {
   if (!k) throw new EngineError("NO_API_KEY", "no API key: set PEONS_API_KEY or ANTHROPIC_API_KEY");
   return k;
 }
+/** The one Anthropic surface this provider uses, so tests can inject a fake client. */
+export type MessagesClient = {
+  messages: { create(body: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> };
+};
 export class AnthropicProvider implements Provider {
-  private client: Anthropic;
-  constructor(opts: { apiKey?: string; maxRetries?: number } = {}) {
-    this.client = new Anthropic({ apiKey: opts.apiKey ?? resolveApiKey(), maxRetries: opts.maxRetries ?? 3 });
+  private client: MessagesClient;
+  constructor(opts: { apiKey?: string; maxRetries?: number; client?: MessagesClient } = {}) {
+    this.client = opts.client ?? new Anthropic({ apiKey: opts.apiKey ?? resolveApiKey(), maxRetries: opts.maxRetries ?? 3 });
   }
   async review(input: ReviewInput): Promise<ReviewOutput> {
     let res: Anthropic.Message;
