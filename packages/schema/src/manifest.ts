@@ -7,7 +7,13 @@ import { isCoveredBy } from "./glob.ts";
 export const ModelTierSchema = z.enum(["fast", "balanced", "deep"]);
 export type ModelTier = z.infer<typeof ModelTierSchema>;
 
-const Globs = z.array(z.string().min(1)).min(1);
+/** A glob must stay inside the repository: no absolute path, no ".." segment. */
+export function isContainedGlob(g: string): boolean {
+  return !g.startsWith("/") && !/^\.\.(\/|$)/.test(g) && !/\/\.\.(\/|$)/.test(g);
+}
+const CONTAINED_MESSAGE = 'globs must be relative to the repository and must not contain ".."';
+const GlobString = z.string().min(1).refine(isContainedGlob, { message: CONTAINED_MESSAGE });
+const Globs = z.array(GlobString).min(1);
 
 export const PeonManifestSchema = z.object({
   name: z.string().refine((n) => validatePeonName(n).ok, { message: "invalid peon name" }),
@@ -17,8 +23,8 @@ export const PeonManifestSchema = z.object({
   severity: z.object({ default: SeveritySchema.default("medium"), block: SeveritySchema.default("high") }).default({ default: "medium", block: "high" }),
   permissions: z.object({ read: Globs }),
   context: z.object({
-    docs: z.array(z.string().min(1)).default([]),
-    tests: z.array(z.string().min(1)).default([]),
+    docs: z.array(GlobString).default([]),
+    tests: z.array(GlobString).default([]),
   }).default({ docs: [], tests: [] }),
   model: z.object({ tier: ModelTierSchema.default("fast") }).default({ tier: "fast" }),
 }).superRefine((m, ctx) => {

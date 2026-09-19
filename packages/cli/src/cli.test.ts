@@ -20,12 +20,16 @@ test("list and plan in plain mode; missing config is exit 2", async () => {
   expect(await runCli(["list"], { cwd, ...c })).toBe(2);
   expect(c.err()).toContain("peons init");
   mkdirSync(join(cwd, "peons/p"), { recursive: true });
-  writeFileSync(join(cwd, "peons/p/peon.md"), `---\nname: p\nversion: 1.0.0\ndescription: d\npaths: ["**/*.tsx"]\npermissions:\n  read: ["**"]\n---\n## Checks\n### c\nx\n`);
+  writeFileSync(join(cwd, "peons/p/peon.md"), `---\nname: p\nversion: 1.0.0\ndescription: d\npaths: ["**/*.tsx"]\npermissions:\n  read: ["**/*.tsx", "docs/**"]\n---\n## Checks\n### c\nx\n`);
   writeFileSync(join(cwd, "peons.yaml"), "peons:\n  - use: ./peons/p\n");
   writeFileSync(join(cwd, "a.tsx"), "x\n");
   const c2 = capture();
   expect(await runCli(["list"], { cwd, ...c2 })).toBe(0);
   expect(c2.out()).toContain("p@1.0.0"); expect(c2.out()).toContain("local");
+  expect(c2.out()).toContain("READ: **/*.tsx, docs/**");   // the read permission is visible without opening peon.md
+  const c2j = capture();
+  expect(await runCli(["list", "--format", "json"], { cwd, ...c2j })).toBe(0);
+  expect(JSON.parse(c2j.out())[0].read).toBe("**/*.tsx, docs/**");
   const c3 = capture();
   expect(await runCli(["plan", "--scope", "files", "a.tsx", "--format", "json"], { cwd, ...c3 })).toBe(0);
   expect(JSON.parse(c3.out()).entries[0].peon).toBe("p");

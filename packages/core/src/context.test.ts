@@ -43,3 +43,19 @@ test("hash is stable for same inputs", async () => {
   const b = await buildContextPack(peon(["**"]), [cf("src/a.tsx")], root(), 60000);
   expect(a.hash).toBe(b.hash);
 });
+test("a changed file resolving outside the repository is a PermissionError", async () => {
+  const r = root();
+  await expect(buildContextPack(peon(["**"]), [cf("../secret.tsx")], r, 60000)).rejects.toThrow(/outside the repository/);
+  await expect(buildContextPack(peon(["**"]), [cf("/etc/hosts")], r, 60000)).rejects.toBeInstanceOf(PermissionError);
+});
+test("docs and tests inside the root are unaffected by the containment check", async () => {
+  const pack = await buildContextPack(peon(["**"], ["docs/a11y/**"], ["**/*.test.tsx"]), [cf("src/a.tsx")], root(), 60000);
+  expect(pack.docs.map((d) => d.path)).toEqual(["docs/a11y/rules.md"]);
+  expect(pack.tests.map((t) => t.path)).toEqual(["src/a.test.tsx", "src/b.test.tsx"]);
+});
+test("a doc glob that escapes the root is refused before the file is read", async () => {
+  // The manifest schema already rejects such a glob; this is the runtime backstop.
+  const r = root();
+  writeFileSync(join(r, "..", "escaped.md"), "secret\n");
+  await expect(buildContextPack(peon(["**"], ["../*.md"]), [cf("src/a.tsx")], r, 60000)).rejects.toThrow(/outside the repository/);
+});

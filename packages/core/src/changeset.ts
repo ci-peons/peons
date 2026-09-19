@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { git, gitHeadSha, defaultBase } from "./git.ts";
 import { parseUnifiedDiff, type Hunk } from "./diff.ts";
 
@@ -40,6 +40,8 @@ export async function computeChangeSet(root: string, scope: ScopeSpec): Promise<
   }
   const warnings: string[] = []; const files: ChangedFile[] = [];
   for (const path of scope.paths) {
+    const abs = resolve(root, path);
+    if (abs !== root && !abs.startsWith(root + sep)) { warnings.push(`${path}: outside the repository, skipped`); continue; }
     let buf: Buffer;
     try { buf = await readFile(join(root, path)); } catch { warnings.push(`${path}: not found, skipped`); continue; }
     if (isBinary(buf)) { warnings.push(`${path}: binary, skipped`); continue; }

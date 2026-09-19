@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { join, dirname, basename } from "node:path";
+import { join, dirname, basename, resolve, sep } from "node:path";
 import { createHash } from "node:crypto";
 import picomatch from "picomatch";
 import { glob } from "tinyglobby";
@@ -21,7 +21,13 @@ async function globFiles(root: string, patterns: string[], limit: number): Promi
   const found = await glob(patterns, { cwd: root, dot: false, onlyFiles: true, ignore: [".peons/**", "node_modules/**", ".git/**"], expandDirectories: false });
   return [...new Set(found.map((f) => f.split("\\").join("/")))].sort().slice(0, limit);
 }
-function assertPermitted(peon: ResolvedPeon, path: string, allow: (p: string) => boolean) {
+/** True when `p`, resolved against `root`, stays inside `root`. */
+export function isInsideRoot(root: string, p: string): boolean {
+  const abs = resolve(root, p);
+  return abs === root || abs.startsWith(root + sep);
+}
+function assertPermitted(peon: ResolvedPeon, root: string, path: string, allow: (p: string) => boolean) {
+  if (!isInsideRoot(root, path)) throw new PermissionError(`peon "${peon.name}" may not read ${path}: outside the repository`);
   if (!allow(path)) throw new PermissionError(`peon "${peon.name}" may not read ${path}: not covered by permissions.read [${peon.manifest.permissions.read.join(", ")}]`);
 }
 function packTokens(files: PackChangedFile[], docs: PackFile[], tests: PackFile[], body: string): number {
@@ -42,9 +48,9 @@ export function hashPack(p: Omit<ContextPack, "hash">): string {
 
 export async function buildContextPack(peon: ResolvedPeon, changed: ChangedFile[], root: string, tokensPerPeon: number): Promise<ContextPack> {
   const allow = picomatch(peon.manifest.permissions.read, { dot: true });
-  for (const f of changed) assertPermitted(peon, f.path, allow);
+  for (const f of changed) assertPermitted(peon, root, f.path, allow);
   const files: PackChangedFile[] = changed.map((f) => ({ ...f, hunksOnly: false }));
-  const read = async (paths: string[]): Promise<PackFile[]> => Promise.all(paths.map(async (path) => { assertPermitted(peon, path, allow); return { path, content: await readFile(join(root, path), "utf8") }; }));
+  const read = async (paths: string[]): Promise<PackFile[]> => Promise.all(paths.map(async (path) => { assertPermitted(peon, root, path, allow); return { path, content: await readFile(join(root, path), "utf8") }; }));
   const docs = await read(await globFiles(root, peon.manifest.context.docs, 20));
   const changedDirs = new Set(changed.map((f) => dirname(f.path)));
   const changedBases = new Set(changed.map((f) => basename(f.path).replace(/\.[^.]+$/, "")));

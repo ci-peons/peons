@@ -62,3 +62,10 @@ test("files scope treats whole file as one hunk and skips binaries and big files
   expect(cs.files[0]!.hunks[0]!.text).toContain("+one");
   expect(cs.warnings.length).toBe(2);
 });
+test("files scope skips paths that resolve outside the repository", async () => {
+  const root = repo();
+  writeFileSync(join(root, "..", "outside.tsx"), "secret\n");
+  const cs = await computeChangeSet(root, { kind: "files", paths: ["src/a.tsx", "../outside.tsx", "/etc/hosts"] });
+  expect(cs.files.map((f) => f.path)).toEqual(["src/a.tsx"]);
+  expect(cs.warnings).toEqual(["../outside.tsx: outside the repository, skipped", "/etc/hosts: outside the repository, skipped"]);
+});
