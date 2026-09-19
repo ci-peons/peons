@@ -10,3 +10,10 @@ test("extracts fingerprints from comment markers", () => {
   const fp = "a".repeat(64);
   expect(existingFingerprints([{ body: `hello <!-- peons:fp:${fp} -->` }, { body: "none" }])).toEqual(new Set([fp]));
 });
+test("extracts fingerprints from review comments and review bodies together", () => {
+  const commentFp = "b".repeat(64);
+  const reviewFp = "c".repeat(64);
+  const comment = { body: `nit <!-- peons:fp:${commentFp} -->` };
+  const review = { body: `Outside the diff:\n- foo <!-- peons:fp:${reviewFp} -->` };
+  expect(existingFingerprints([comment, review])).toEqual(new Set([commentFp, reviewFp]));
+});

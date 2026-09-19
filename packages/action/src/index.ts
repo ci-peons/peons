@@ -5,14 +5,29 @@ import { run, buildReviewPayload, formatSarif, formatAgent, EngineError } from "
 import { SeveritySchema } from "@peons/schema";
 import { diffLinesFromPatch, existingFingerprints } from "./review.ts";
 
+async function git(args: string[]): Promise<void> {
+  const { execFile } = await import("node:child_process");
+  await new Promise<void>((res, rej) => execFile("git", args, (e) => (e ? rej(e) : res())));
+}
+
 async function main() {
-  process.env.PEONS_API_KEY = core.getInput("api-key", { required: true });
+  const apiKey = core.getInput("api-key", { required: true });
+  core.setSecret(apiKey);
+  process.env.PEONS_API_KEY = apiKey;
   const scopeIn = core.getInput("scope") || "branch";
   const pr = github.context.payload.pull_request;
   const base = core.getInput("base") || pr?.base?.ref;
   const failOnIn = core.getInput("fail-on"); const failOn = failOnIn ? SeveritySchema.parse(failOnIn) : undefined;
   const names = core.getInput("peons").split(/\s+/).filter(Boolean);
-  if (scopeIn === "branch" && base) await core.group("fetch base", async () => { const { execFile } = await import("node:child_process"); await new Promise<void>((res, rej) => execFile("git", ["fetch", "--no-tags", "--depth=1", "origin", base], (e) => (e ? rej(e) : res()))); });
+  if (scopeIn === "branch" && base) {
+    await core.group("fetch base", () => git(["fetch", "--no-tags", "--depth=1", "origin", `+refs/heads/${base}:refs/remotes/origin/${base}`]));
+    try {
+      await git(["merge-base", `origin/${base}`, "HEAD"]);
+    } catch {
+      core.setFailed(`peons: no merge base between origin/${base} and HEAD. Set fetch-depth: 0 on actions/checkout so the base branch history is available.`);
+      return;
+    }
+  }
   const scope = scopeIn === "staged" ? { kind: "staged" as const } : { kind: "branch" as const, base: base ? `origin/${base}` : undefined };
   const result = await run({ root: process.cwd(), scope, names: names.length ? names : undefined, failOn, surface: "ci" });
   core.info(formatAgent(result));
@@ -23,8 +38,11 @@ async function main() {
     const { owner, repo } = github.context.repo; const pull_number = pr.number;
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, { owner, repo, pull_number, per_page: 100 });
     const comments = await octokit.paginate(octokit.rest.pulls.listReviewComments, { owner, repo, pull_number, per_page: 100 });
-    const payload = buildReviewPayload(result, { existingFingerprints: existingFingerprints(comments), diffLines: diffLinesFromPatch(files) });
-    if (payload.comments.length || result.findings.length) {
+    const reviews = await octokit.paginate(octokit.rest.pulls.listReviews, { owner, repo, pull_number, per_page: 100 });
+    const existing = existingFingerprints([...comments, ...reviews.map((r) => ({ body: r.body ?? "" }))]);
+    const payload = buildReviewPayload(result, { existingFingerprints: existing, diffLines: diffLinesFromPatch(files) });
+    const newCount = result.findings.filter((f) => !existing.has(f.fingerprint)).length;
+    if (newCount > 0) {
       const params = { owner, repo, pull_number, event: payload.event, body: payload.body, comments: payload.comments.map((c) => ({ ...c, side: "RIGHT" as const })) };
       try {
         await octokit.rest.pulls.createReview(params);

@@ -1,5 +1,5 @@
 {
-  "name": "@peons/action", "private": true, "version": "0.1.0", "type": "module",
-  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist --format=cjs" },
+  "name": "@peons/action", "private": true, "version": "0.1.0",
+  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist --format=cjs --define \"import.meta.url=__filename\"" },
   "dependencies": { "@peons/core": "workspace:*", "@peons/schema": "workspace:*", "@actions/core": "^1.11.0", "@actions/github": "^6.0.0" }
 }
