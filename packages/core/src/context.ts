@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
 import picomatch from "picomatch";
-import { Glob } from "bun";
+import { glob } from "tinyglobby";
 import type { DroppedItem } from "@peons/schema";
 import { EngineError } from "./errors.ts";
 import type { ResolvedPeon } from "./config.ts";
@@ -18,9 +18,8 @@ export class PermissionError extends EngineError { constructor(msg: string) { su
 export function estimateTokens(text: string): number { return Math.ceil(text.length / 4); }
 
 async function globFiles(root: string, patterns: string[], limit: number): Promise<string[]> {
-  const set = new Set<string>();
-  for (const p of patterns) for await (const f of new Glob(p).scan({ cwd: root, dot: false, onlyFiles: true })) set.add(f.split("\\").join("/"));
-  return [...set].filter((f) => !f.startsWith(".peons/") && !f.startsWith("node_modules/") && !f.startsWith(".git/")).sort().slice(0, limit);
+  const found = await glob(patterns, { cwd: root, dot: false, onlyFiles: true, ignore: [".peons/**", "node_modules/**", ".git/**"], expandDirectories: false });
+  return [...new Set(found.map((f) => f.split("\\").join("/")))].sort().slice(0, limit);
 }
 function assertPermitted(peon: ResolvedPeon, path: string, allow: (p: string) => boolean) {
   if (!allow(path)) throw new PermissionError(`peon "${peon.name}" may not read ${path}: not covered by permissions.read [${peon.manifest.permissions.read.join(", ")}]`);
