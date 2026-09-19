@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [{
+    "tool": { "driver": { "name": "peons", "informationUri": "https://peons.dev", "rules": [
+      { "id": "a11y/img-alt", "name": "img-alt", "shortDescription": { "text": "a11y: img-alt" }, "properties": { "peon": "a11y", "version": "1.0.0" } },
+      { "id": "a11y/interactive-name", "name": "interactive-name", "shortDescription": { "text": "a11y: interactive-name" }, "properties": { "peon": "a11y", "version": "1.0.0" } }
+    ] } },
+    "results": [
+      { "ruleId": "a11y/img-alt", "level": "error", "message": { "text": "Image has no alt attribute.\n\nFix: Add alt=\"Company logo\"." },
+        "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/a.tsx" }, "region": { "startLine": 4, "endLine": 4 } } }],
+        "partialFingerprints": { "primary": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } },
+      { "ruleId": "a11y/interactive-name", "level": "warning", "message": { "text": "Icon button has no accessible name." },
+        "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/a.tsx" }, "region": { "startLine": 10, "endLine": 12 } } }],
+        "partialFingerprints": { "primary": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" } }
+    ]
+  }]
+}
