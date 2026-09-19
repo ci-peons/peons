@@ -20,7 +20,7 @@ async function main() {
   const failOnIn = core.getInput("fail-on"); const failOn = failOnIn ? SeveritySchema.parse(failOnIn) : undefined;
   const names = core.getInput("peons").split(/\s+/).filter(Boolean);
   if (scopeIn === "branch" && base) {
-    await core.group("fetch base", () => git(["fetch", "--no-tags", "--depth=1", "origin", `+refs/heads/${base}:refs/remotes/origin/${base}`]));
+    await core.group("fetch base", () => git(["fetch", "--no-tags", "origin", `+refs/heads/${base}:refs/remotes/origin/${base}`]));
     try {
       await git(["merge-base", `origin/${base}`, "HEAD"]);
     } catch {

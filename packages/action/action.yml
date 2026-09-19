@@ -4,7 +4,7 @@ branding: { icon: "eye", color: "orange" }
 inputs:
   api-key: { description: "Anthropic API key (PEONS_API_KEY)", required: true }
   github-token: { description: "Token for posting the review", default: "${{ github.token }}" }
-  scope: { description: "branch | staged | files. branch needs the base history: use actions/checkout with fetch-depth: 0", default: "branch" }
+  scope: { description: "branch | staged. branch needs the base history: use actions/checkout with fetch-depth: 0", default: "branch" }
   base: { description: "Base ref for branch scope; defaults to the PR base" }
   peons: { description: "Space-separated peon names; empty runs all planned peons" }
   fail-on: { description: "Override block severity: info | low | medium | high | critical" }
