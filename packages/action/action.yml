@@ -1,0 +1,16 @@
+name: "ci-peons"
+description: "Run specialised AI code reviewers (peons) on a pull request"
+branding: { icon: "eye", color: "orange" }
+inputs:
+  api-key: { description: "Anthropic API key (PEONS_API_KEY)", required: true }
+  github-token: { description: "Token for posting the review", default: "${{ github.token }}" }
+  scope: { description: "branch | staged | files", default: "branch" }
+  base: { description: "Base ref for branch scope; defaults to the PR base" }
+  peons: { description: "Space-separated peon names; empty runs all planned peons" }
+  fail-on: { description: "Override block severity: info | low | medium | high | critical" }
+  sarif: { description: "Write peons.sarif for upload-sarif", default: "false" }
+  soft-fail: { description: "Turn engine errors (exit 2) into a neutral warning", default: "false" }
+outputs:
+  exit-code: { description: "0, 1 or 2" }
+  findings: { description: "Number of findings" }
+runs: { using: "node20", main: "dist/index.js" }
