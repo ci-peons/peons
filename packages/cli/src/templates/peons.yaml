@@ -1,0 +1,6 @@
+# ci-peons configuration. Docs: https://peons.dev/docs/config
+provider: anthropic          # key from PEONS_API_KEY or ANTHROPIC_API_KEY
+peons: []
+#  - use: a11y               # installed with: peons add a11y
+#    paths: ["apps/web/**"]
+#  - use: ./peons/my-peon    # a local peon directory

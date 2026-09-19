@@ -1,0 +1,14 @@
+{
+  "name": "peons",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "peons": "./dist/index.js" },
+  "files": ["dist"],
+  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist --banner '#!/usr/bin/env node' --external react-devtools-core" },
+  "dependencies": {
+    "@peons/core": "workspace:*", "@peons/schema": "workspace:*",
+    "commander": "^12.1.0", "ink": "^5.0.1", "ink-spinner": "^5.0.0", "react": "^18.3.1",
+    "@clack/prompts": "^0.7.0", "picocolors": "^1.1.0"
+  },
+  "devDependencies": { "@types/react": "^18.3.0" }
+}
