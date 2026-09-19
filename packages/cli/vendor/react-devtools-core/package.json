@@ -1,0 +1,7 @@
+{
+  "name": "react-devtools-core",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "index.js",
+  "description": "No-op local stub. Ink only imports this behind `if (process.env.DEV === 'true')`, but bundling for Node with --external hoists the import to a top-level static ESM import, which Node's loader then fails to resolve at load time even though the branch never runs. This stub lets the bundler inline a real, resolvable module instead of leaving a dangling external import in the built CLI."
+}

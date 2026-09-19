@@ -3,6 +3,6 @@
   "version": "0.1.0",
   "type": "module",
   "bin": { "peons-mcp": "./dist/index.js" },
-  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist --banner '#!/usr/bin/env node'" },
+  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist" },
   "dependencies": { "@peons/core": "workspace:*", "@peons/schema": "workspace:*", "@modelcontextprotocol/sdk": "^1.12.0", "zod": "^4.0.0" }
 }
