@@ -68,10 +68,14 @@ export async function run(opts: RunOptions): Promise<RunResult> {
     emit({ type: "peon:done", status: r.status });
     return r;
   }));
-  const findings = mergeFindings(results.flatMap((r) => r.findings));
+  const allFindings = results.flatMap((r) => r.findings);
+  const findings = mergeFindings(allFindings);
   const peons = results.map((r) => r.status);
   const blockFor = (f: Finding): Severity => opts.failOn ?? cfg.peons.find((p) => p.name === f.peon.name)!.block;
-  const exit: 0 | 1 | 2 = peons.some((p) => p.status === "error") ? 2 : findings.some((f) => atLeast(f.severity, blockFor(f))) ? 1 : 0;
+  // Evaluated over the pre-merge findings so each finding is judged against its own peon's
+  // threshold; merging keeps only one duplicate and would otherwise make the exit code depend
+  // on peons.yaml order when two peons report the same finding at the same severity.
+  const exit: 0 | 1 | 2 = peons.some((p) => p.status === "error") ? 2 : allFindings.some((f) => atLeast(f.severity, blockFor(f))) ? 1 : 0;
   const result: RunResult = {
     plan, findings, peons, redactions: results.reduce((n, r) => n + r.redactions, 0),
     dropped: results.flatMap((r) => r.dropped), exit, durationMs: Date.now() - t0,

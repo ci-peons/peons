@@ -19,11 +19,11 @@ permissions:
 ### img-alt
 Images need alt.
 `;
-function repo(): string {
+function repo(order: string[] = ["a11y", "react"]): string {
   const root = mkdtempSync(join(tmpdir(), "run-"));
   mkdirSync(join(root, "peons/a11y"), { recursive: true }); writeFileSync(join(root, "peons/a11y/peon.md"), PEON("a11y"));
   mkdirSync(join(root, "peons/react"), { recursive: true }); writeFileSync(join(root, "peons/react/peon.md"), PEON("react", "critical"));
-  writeFileSync(join(root, "peons.yaml"), "peons:\n  - use: ./peons/a11y\n  - use: ./peons/react\n");
+  writeFileSync(join(root, "peons.yaml"), "peons:\n" + order.map((n) => `  - use: ./peons/${n}\n`).join(""));
   mkdirSync(join(root, "src")); writeFileSync(join(root, "src/a.tsx"), '<img src="x" />\n');
   return root;
 }
@@ -37,6 +37,11 @@ test("runs planned peons, merges, exits 1 on blocking finding, journals", async 
   expect(r.peons.map((p) => p.status)).toEqual(["ok", "ok"]);
   expect(events).toEqual(["plan", "peon:start", "peon:start", "peon:done", "peon:done", "done"]);
   expect(readdirSync(join(root, ".peons/journal")).length).toBe(1);
+});
+test("blocking exit does not depend on peons.yaml order", async () => {
+  const root = repo(["react", "a11y"]);
+  const r = await run({ root, scope: { kind: "files", paths: ["src/a.tsx"] }, surface: "cli", provider: new FakeProvider(flag) });
+  expect(r.exit).toBe(1);
 });
 test("failOn override and names filter", async () => {
   const root = repo();

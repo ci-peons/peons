@@ -44,6 +44,7 @@ function fixtureConfig(cfg: ResolvedConfig, peon: ResolvedPeon): ResolvedConfig 
 export async function testPeons(opts: TestOptions): Promise<TestResult> {
   const emit = opts.onEvent ?? (() => {});
   const cfg = await loadConfig(opts.root);
+  if (opts.names) for (const name of opts.names) if (!cfg.peons.some((p) => p.name === name)) throw new EngineError("PEON_UNKNOWN", `peon "${name}" is not configured in peons.yaml`);
   const peons = cfg.peons.filter((p) => !opts.names || opts.names.includes(p.name));
   const runs = Math.max(1, opts.runs ?? 1);
   const scores = new Map<string, CheckScore>();

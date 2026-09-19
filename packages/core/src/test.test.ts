@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { testPeons } from "./test.ts";
 import { FakeProvider } from "./provider/fake.ts";
+import { EngineError } from "./errors.ts";
 
 function repo(): string {
   const root = mkdtempSync(join(tmpdir(), "t-"));
@@ -35,4 +36,13 @@ test("scores recall and precision per check", async () => {
 test("thresholds can be lowered", async () => {
   const r = await testPeons({ root: repo(), provider: fake, minRecall: 0.5 });
   expect(r.passed).toBe(true);
+});
+test("unknown peon name rejects", async () => {
+  try {
+    await testPeons({ root: repo(), provider: fake, names: ["nope"] });
+    throw new Error("expected rejection");
+  } catch (e) {
+    expect(e).toBeInstanceOf(EngineError);
+    expect((e as Error).message).toContain("nope");
+  }
 });
