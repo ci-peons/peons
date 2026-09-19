@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ci-peons | Seed narrative, September 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F1F3F5; --paper: #FFFFFF; --ink: #10202F; --muted: #5B6B7A; --line: #D3DAE0;
+    --amber: #D9981F; --amber-ink: #7A5200; --amber-soft: #FBF1DC; --teal: #2A8F86; --teal-soft: #E3F2F0;
+    --shadow: 0 1px 0 rgba(16,32,47,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1B2D; --paper: #16253A; --ink: #EEF1F4; --muted: #9AA7B6; --line: #2A3A50;
+      --amber: #F2B441; --amber-ink: #F2B441; --amber-soft: #2A2410; --teal: #5FC4BA; --teal-soft: #10302E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1B2D; --paper: #16253A; --ink: #EEF1F4; --muted: #9AA7B6; --line: #2A3A50;
+    --amber: #F2B441; --amber-ink: #F2B441; --amber-soft: #2A2410; --teal: #5FC4BA; --teal-soft: #10302E;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; line-height: 1.45; }
+  code, pre, .mono { font-family: "IBM Plex Mono", Menlo, Consolas, monospace; }
+
+  /* Canvas: 1280x720 scaled to fit on wide screens, flow layout on narrow screens */
+  .viewport { position: fixed; inset: 0 0 48px 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .canvas { width: 1280px; height: 720px; position: relative; transform-origin: center center; }
+  .slide { position: absolute; inset: 0; display: none; background: var(--paper); padding: 48px 64px 40px; box-shadow: var(--shadow); overflow: hidden; }
+  .slide.cover { display: none; } .slide.cover.active { display: flex; flex-direction: column; justify-content: center; }
+  .slide.active { display: block; }
+  .slide-head { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+  .slide-head .n { font-variant-numeric: tabular-nums; }
+  .bar { position: absolute; left: 0; top: 0; height: 4px; background: var(--amber); }
+
+  h1 { font-size: 72px; line-height: 1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 16px; }
+  h2 { font-size: 30px; line-height: 1.15; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 22px; max-width: 48ch; }
+  h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px; }
+  p { margin: 0 0 12px; font-size: 17px; max-width: 60ch; }
+  .lead { font-size: 22px; color: var(--muted); max-width: 40ch; }
+  .small { font-size: 13.5px; color: var(--muted); }
+  ul { margin: 0 0 12px; padding-left: 18px; font-size: 16px; }
+  li { margin-bottom: 8px; }
+  b { font-weight: 600; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: start; }
+  .c7-5 { grid-template-columns: 7fr 5fr; }
+  .c5-7 { grid-template-columns: 5fr 7fr; }
+
+  pre { background: var(--bg); border: 1px solid var(--line); border-left: 4px solid var(--amber); padding: 18px 20px; margin: 0; font-size: 13.5px; line-height: 1.55; overflow: hidden; }
+  pre .c { color: var(--muted); } pre .a { color: var(--amber-ink); font-weight: 500; } pre .t { color: var(--teal); font-weight: 500; }
+
+  .stat { border-top: 2px solid var(--amber); padding-top: 10px; }
+  .stat b { display: block; font-size: 44px; line-height: 1; margin-bottom: 8px; letter-spacing: -0.02em; }
+  .stat span { display: block; font-size: 15px; color: var(--muted); }
+  .stat .src { font-size: 12px; margin-top: 6px; color: var(--muted); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 500; color: var(--muted); }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.us td { background: var(--amber-soft); font-weight: 500; }
+
+  .panel { background: var(--bg); border: 1px solid var(--line); padding: 16px 18px; }
+  .panel.amber { border-left: 4px solid var(--amber); }
+  .panel.teal { border-left: 4px solid var(--teal); }
+
+  .quad { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); height: 420px; }
+  .quad > div { background: var(--paper); padding: 16px 18px; font-size: 14px; }
+  .quad > div p { font-size: 14px; color: var(--muted); }
+  .quad .us { background: var(--amber-soft); }
+  .axis { font-size: 12px; color: var(--muted); }
+
+  .gates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .gate { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13px; }
+  .gate.hit { border-top-color: var(--amber); }
+  .gate h3 { font-size: 15px; }
+  .gate .k { color: var(--amber-ink); font-weight: 500; }
+
+  svg text { font-family: inherit; fill: var(--ink); }
+  svg .ln { stroke: var(--line); } svg .bar-f { fill: var(--amber); } svg .lbl { fill: var(--muted); font-size: 12px; }
+  svg .box { fill: var(--bg); stroke: var(--line); } svg .box-a { fill: var(--amber-soft); stroke: var(--amber); } svg .box-t { fill: var(--teal-soft); stroke: var(--teal); }
+  svg .arr { stroke: var(--muted); fill: none; marker-end: url(#m); }
+
+  .notes { display: none; position: absolute; left: 64px; right: 64px; bottom: 16px; background: var(--teal-soft); border-left: 4px solid var(--teal); padding: 10px 14px; font-size: 13px; color: var(--ink); max-height: 150px; overflow: auto; }
+  .show-notes .notes { display: block; }
+
+  .foot { position: fixed; left: 0; right: 0; bottom: 0; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-top: 1px solid var(--line); background: var(--bg); font-size: 13px; color: var(--muted); }
+  .foot button { font: inherit; background: none; border: 1px solid var(--line); color: var(--ink); padding: 5px 12px; cursor: pointer; border-radius: 4px; margin-left: 6px; }
+  .foot button:hover { border-color: var(--amber); }
+  .foot button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  @media (max-width: 900px) {
+    .viewport { position: static; display: block; overflow: visible; }
+    .canvas { width: 100%; height: auto; transform: none !important; }
+    .slide { position: static; display: block; padding: 24px 20px; margin-bottom: 12px; min-height: 0; }
+    .cols, .cols3, .c7-5, .c5-7 { grid-template-columns: 1fr; gap: 20px; }
+    h1 { font-size: 44px; } h2 { font-size: 24px; } p { font-size: 16px; }
+    .stat b { font-size: 34px; }
+    .quad { height: auto; grid-template-rows: auto; }
+    .gates { grid-template-columns: 1fr 1fr; }
+    pre { overflow-x: auto; font-size: 12.5px; }
+    .tablewrap { overflow-x: auto; }
+    .foot { display: none; }
+    .slide { box-shadow: none; border-bottom: 1px solid var(--line); }
+    .notes { position: static; margin-top: 12px; }
+  }
+  @media print {
+    .viewport { position: static; display: block; }
+    .canvas { width: 100%; height: auto; transform: none !important; }
+    .slide { position: static; display: block !important; page-break-after: always; box-shadow: none; height: 100vh; }
+    .foot, .notes { display: none !important; }
+    @page { size: landscape; margin: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="viewport"><div class="canvas" id="canvas">
+
+<!-- 1 Cover -->
+<section class="slide cover active" aria-label="Slide 1">
+  <div class="bar" style="width:8.3%"></div>
+  <div class="slide-head"><span>Seed narrative, September 2026</span><span class="n">1 / 12</span></div>
+  <div class="cols c5-7">
+    <div>
+      <h1>ci-peons</h1>
+      <p class="lead">Specialised code reviewers your team writes as files, runs in CI, and lets coding agents call.</p>
+      <p class="small" style="margin-top:32px">Dan Neciu<br>Engineering Manager and Staff Engineer, Perk<br>Author, Real-World Next.js<br>Organiser, ReactJS Barcelona</p>
+    </div>
+    <pre><span class="c">$</span> peons run --auto --scope staged --format agent
+
+<span class="c">Boss: 2 of 5 peons dispatched (events-domain, a11y). est. $0.04</span>
+
+<span class="a">events-domain</span>  apps/events/api/createBooking.ts:41  <span class="a">critical</span>
+  This write bypasses the idempotency key introduced after the
+  July double-booking incident (docs/incidents/2026-07-double-booking.md)
+  Wrap the insert in withIdempotency(req.headers['idempotency-key']).
+
+<span class="t">a11y</span>           apps/events/ui/BookingForm.tsx:88   <span class="t">medium</span>
+  Submit renders as &lt;div onClick&gt;. Use &lt;button type="submit"&gt; so
+  it is keyboard reachable and announced as a button.
+
+<span class="c">2 findings, 1 critical, 14s, $0.03. Exit 1.</span></pre>
+  </div>
+  <aside class="notes">Open on the terminal, not the tagline. The first finding is the whole pitch: a reviewer that knows this folder's incident history and can say so in one sentence. Ask the room whether their reviewer could write that line. Then read the last line: 14 seconds, three cents, and an exit code an agent can act on.</aside>
+</section>
+
+<!-- 2 Why now -->
+<section class="slide" aria-label="Slide 2">
+  <div class="bar" style="width:16.6%"></div>
+  <div class="slide-head"><span>Why now</span><span class="n">2 / 12</span></div>
+  <h2>Code review became the bottleneck in 2026, and the free options started metering it.</h2>
+  <div class="cols3">
+    <div class="stat"><b>8x</b><span>more code shipped per engineer per quarter at Anthropic versus 2021 to 2025; Claude authors 80% of it</span><span class="src">Anthropic, September 2026</span></div>
+    <div class="stat"><b>10.8 vs 6.5</b><span>issues per pull request, AI-assisted versus human-authored; 41% of new code is now AI-generated</span><span class="src">CodeRabbit Series C materials, August 2026</span></div>
+    <div class="stat"><b>June 2026</b><span>GitHub Copilot code review moved to usage billing and started consuming Actions minutes on private repos</span><span class="src">GitHub changelog</span></div>
+  </div>
+  <div class="cols" style="margin-top:36px">
+    <div class="panel amber"><h3>The volume signal</h3><p style="font-size:15px;margin:0">CodeRabbit runs more than two million reviews a week for 17,000 customers with revenue up five times year on year. Review is now a paid, high-volume workload, not a nice-to-have.</p></div>
+    <div class="panel teal"><h3>The shape change</h3><p style="font-size:15px;margin:0">Agents open many small PRs, overnight and at weekends. Anthropic's CI load rose 25x in six months. Review tooling built for one big human PR a day is the wrong shape for this.</p></div>
+  </div>
+  <aside class="notes">Three facts, each sourced to this month or last. The point to land: review is no longer bundled and free. GitHub metered it. Anthropic prices its own at $15 to $25 a PR. Whoever wins the cheap, high-volume end wins the agent era.</aside>
+</section>
+
+<!-- 3 Problem -->
+<section class="slide" aria-label="Slide 3">
+  <div class="bar" style="width:25%"></div>
+  <div class="slide-head"><span>Problem</span><span class="n">3 / 12</span></div>
+  <h2>Every AI reviewer on the market is one generic pass over the diff. Teams pay for it three times.</h2>
+  <div class="cols3">
+    <div>
+      <h3>In noise</h3>
+      <p style="font-size:15px">Out of the box they are too chatty. Teams spend weeks tuning YAML, then developers learn to scroll past the bot. Independent reviews of CodeRabbit, Copilot and Bugbot all reach this conclusion.</p>
+    </div>
+    <div>
+      <h3>In missing context</h3>
+      <p style="font-size:15px">The reviewer does not know which team owns the folder, what the ADR decided, which incident shaped this code, or that a test already covers the thing it is about to flag. Most "false positives" are this.</p>
+    </div>
+    <div>
+      <h3>In the wrong shape for agents</h3>
+      <p style="font-size:15px">A coding agent mid-task wants one opinion on one concern in seconds. Today's CLIs run the full review in 7 to 30 minutes, and the deepest option costs $15 to $25 per PR on enterprise plans only.</p>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:28px;max-width:900px">
+    <p style="margin:0;font-size:16px"><b>The sentence no reviewer can write today:</b> "This bypasses the idempotency key the events team introduced after the July double-booking incident." Not because models can't reason, but because nobody gives them the team's history in a form they can use.</p>
+  </div>
+  <aside class="notes">The three costs map to the three things we build: peons (narrow, testable), context (vault), and the CLI-first shape. Don't rush the closing sentence; it sets up slide 4.</aside>
+</section>
+
+<!-- 4 Solution -->
+<section class="slide" aria-label="Slide 4">
+  <div class="bar" style="width:33.3%"></div>
+  <div class="slide-head"><span>Solution</span><span class="n">4 / 12</span></div>
+  <h2>A peon is a reviewer as a file: scoped to paths, loaded with the team's context, shipped with its own tests.</h2>
+  <div class="cols c5-7">
+    <pre><span class="c"># peons/events-domain.md</span>
+name: events-domain
+paths: ["apps/events/**"]
+severity: { block: critical }
+permissions: { read: ["apps/events/**", "docs/**"] }
+context:
+  team: events
+  docs: ["docs/adr/00*-events-*.md"]
+  incidents: ["docs/incidents/*.md"]
+  history: { prs: 20, since: 90d }
+fixtures: ./fixtures        <span class="c"># should-flag, should-pass</span>
+
+<span class="c">## Checks</span>
+- Every write to bookings goes through withIdempotency.
+- Event mutations emit an audit entry.
+- No direct Stripe calls outside apps/events/billing.</pre>
+    <div>
+      <ul>
+        <li><b>One engine, three surfaces.</b> GitHub Action gates the PR. CLI serves humans and agents. MCP serves agents that prefer tools. Identical results in all three, or agents stop trusting the local run.</li>
+        <li><b>Narrow by design.</b> An agent calls one peon, gets one concern answered in seconds for cents, and fixes it before a human sees the PR.</li>
+        <li><b>Measured, not argued about.</b> <code>peons test</code> runs each peon against its should-flag and should-pass fixtures and reports precision. Noise becomes a number the team can fix.</li>
+        <li><b>Drafted from the team's own reviews.</b> <code>peons create --from-reviews</code> clusters six months of their PR comments into a checklist with real fixtures.</li>
+        <li><b>Bring your own key. MIT core.</b> No inference cost on our side, no lock-in on theirs.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Point at the permissions line: third-party reviewers with file access are a supply-chain risk, and we treat peons like packages from day one: manifest, lockfile with content hashes, printed on install.</aside>
+</section>
+
+<!-- 5 How a PR flows -->
+<section class="slide" aria-label="Slide 5">
+  <div class="bar" style="width:41.6%"></div>
+  <div class="slide-head"><span>Product</span><span class="n">5 / 12</span></div>
+  <h2>The Boss routes each change to the right peons, merges their findings, and never reviews code itself.</h2>
+  <svg viewBox="0 0 1150 300" width="100%" role="img" aria-label="Flow: change enters the Boss, which dispatches to selected peons in parallel, merges findings, and outputs to PR comments, agent loop, or SARIF">
+    <defs><marker id="m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5B6B7A"/></marker></defs>
+    <rect class="box" x="10" y="110" width="170" height="80" rx="3"/><text x="95" y="143" text-anchor="middle" font-size="15" font-weight="600">Change</text><text x="95" y="165" text-anchor="middle" class="lbl">PR, staged diff, or agent call</text>
+    <path class="arr" d="M180,150 L240,150"/>
+    <rect class="box-a" x="240" y="90" width="200" height="120" rx="3"/><text x="340" y="122" text-anchor="middle" font-size="15" font-weight="600">Boss: plan</text><text x="340" y="146" text-anchor="middle" class="lbl">path routing, deterministic</text><text x="340" y="164" text-anchor="middle" class="lbl">small model for intent + budget</text><text x="340" y="182" text-anchor="middle" class="lbl">reads the rollup</text>
+    <path class="arr" d="M440,120 L520,60"/><path class="arr" d="M440,150 L520,150"/><path class="arr" d="M440,180 L520,240"/>
+    <rect class="box-t" x="520" y="35" width="170" height="50" rx="3"/><text x="605" y="65" text-anchor="middle" font-size="14">events-domain</text>
+    <rect class="box-t" x="520" y="125" width="170" height="50" rx="3"/><text x="605" y="155" text-anchor="middle" font-size="14">a11y</text>
+    <rect class="box" x="520" y="215" width="170" height="50" rx="3" stroke-dasharray="4 3"/><text x="605" y="245" text-anchor="middle" font-size="14" fill="#5B6B7A">security (on escalation)</text>
+    <path class="arr" d="M690,60 L770,120"/><path class="arr" d="M690,150 L770,150"/><path class="arr" d="M690,240 L770,180"/>
+    <rect class="box-a" x="770" y="90" width="180" height="120" rx="3"/><text x="860" y="122" text-anchor="middle" font-size="15" font-weight="600">Boss: merge</text><text x="860" y="146" text-anchor="middle" class="lbl">dedupe, rank by severity</text><text x="860" y="164" text-anchor="middle" class="lbl">one escalation round max</text><text x="860" y="182" text-anchor="middle" class="lbl">append to journal</text>
+    <path class="arr" d="M950,150 L990,150"/>
+    <rect class="box" x="990" y="70" width="155" height="160" rx="3"/><text x="1067" y="100" text-anchor="middle" font-size="14" font-weight="600">Output</text><text x="1067" y="128" text-anchor="middle" class="lbl">PR review comments</text><text x="1067" y="150" text-anchor="middle" class="lbl">agent fix instructions</text><text x="1067" y="172" text-anchor="middle" class="lbl">SARIF to code scanning</text><text x="1067" y="194" text-anchor="middle" class="lbl">exit code gate</text>
+  </svg>
+  <div class="cols" style="margin-top:20px">
+    <p class="small"><b>Every decision is explained.</b> <code>peons plan</code> prints which peons run and why: "a11y: BookingForm.tsx changed, form markup in diff. react: skipped, 3 lines, no hooks." Teams pin <code>always:</code> and <code>never_skip:</code> so hard rules cannot be routed around.</p>
+    <p class="small"><b>Agents get it for free.</b> A shipped Claude Code skill, Cursor rule and Stop hook run <code>peons run --auto</code> on staged changes. The agent never needs to know the catalog; the Boss picks.</p>
+  </div>
+  <aside class="notes">The Boss only ever sees file list, diff stats, PR text, team map and peon descriptions. If it read the whole diff with a big model we would have rebuilt CodeRabbit with extra steps and lost the cost edge. Escalation: a critical on a request-handling file pulls in security. Capped at one round.</aside>
+</section>
+
+<!-- 6 Compounding -->
+<section class="slide" aria-label="Slide 6">
+  <div class="bar" style="width:50%"></div>
+  <div class="slide-head"><span>Product</span><span class="n">6 / 12</span></div>
+  <h2>It gets better per repository the way test selection does: journal, rollup, selector.</h2>
+  <div class="cols c7-5">
+    <div>
+      <p style="font-size:16px">Anthropic scaled test impact analysis to a 25x CI load by moving state out of the process: workers append results to a journal, a consumer rolls it up per test, a selector reads the rollup. Peon memory has the same shape with findings instead of test results.</p>
+      <div class="cols" style="gap:20px">
+        <div class="panel"><h3>Journal and rollup</h3><p style="font-size:14px;margin:0">Every run appends peon, path, finding, severity, outcome. Outcomes come free from git and the PR: accepted, dismissed, suppressed, reverted. Rolled up per peon and path into precision, dismiss rate, last clean commit.</p></div>
+        <div class="panel"><h3>Boss as selector</h3><p style="font-size:14px;margin:0">Skip peons that are clean on unchanged surface. Demote a rule the team dismisses 80% of the time (the flaky-test equivalent). Re-run a peon whose finding preceded a revert.</p></div>
+      </div>
+      <p class="small" style="margin-top:16px">Local journal in <code>.peons/journal/</code> for one repo. Cross-repo, cross-team history for an organisation is the hosted store, which is the technical basis of the Team tier. The CLI stays stateless; journal is append-only, rollup and vault are rebuildable from git.</p>
+    </div>
+    <div>
+      <pre><span class="c"># .peons/vault/apps/events/api/createBooking.md</span>
+owners: [events]
+imports: [[withIdempotency]], [[BookingRepo]]
+imported_by: [[BookingForm]], [[waitlistWorker]]
+tests: [[createBooking.test]]
+adrs: [[adr-007-idempotent-writes]]
+incidents: [[2026-07-double-booking]]
+findings: 3 accepted, 1 dismissed</pre>
+      <p class="small" style="margin-top:12px"><b>The vault</b> is one markdown note per module, built from the TypeScript compiler API and CODEOWNERS, rebuilt incrementally on merge. Peons read it instead of crawling the repo; the Boss walks <code>imported_by</code> for blast radius. Humans and agents can read and correct it, which a vendor's embedding index never allows.</p>
+    </div>
+  </div>
+  <aside class="notes">Why not embeddings like early Cursor: expensive, stale within a day under agent merge volume, and opaque. For a JS/TS wedge a symbol graph is enough and it lives in the repo. Embeddings over vault notes for "similar past bugs" are a later, optional layer.</aside>
+</section>
+
+<!-- 7 Unit economics -->
+<section class="slide" aria-label="Slide 7">
+  <div class="bar" style="width:58.3%"></div>
+  <div class="slide-head"><span>Unit economics</span><span class="n">7 / 12</span></div>
+  <h2>Targeted reviews cost cents on the customer's key. The category's cost structure works against the incumbents.</h2>
+  <div class="cols c7-5">
+    <div class="tablewrap">
+      <table>
+        <tr><th>Option</th><th>Scope per run</th><th class="n">Cost per PR</th><th class="n">Latency</th><th>Availability</th></tr>
+        <tr><td>Anthropic Code Review</td><td>Full, multi-agent</td><td class="n">$15 to $25</td><td class="n">~20 min</td><td>Team, Enterprise</td></tr>
+        <tr><td>Cursor Bugbot</td><td>Full, bug-focused</td><td class="n">$1 to $1.50</td><td class="n">minutes</td><td>GitHub only</td></tr>
+        <tr><td>GitHub Copilot review</td><td>Full</td><td class="n">metered</td><td class="n">minutes</td><td>GitHub only</td></tr>
+        <tr><td>CodeAnt AI</td><td>Full</td><td class="n">$24 per user, flat</td><td class="n">minutes</td><td>Hosted</td></tr>
+        <tr class="us"><td>ci-peons, targeted</td><td>1 to 3 peons, changed surface</td><td class="n">$0.03 to $0.10</td><td class="n">15 to 60 s</td><td>Any CI, any provider</td></tr>
+      </table>
+      <p class="small" style="margin-top:10px">ci-peons cost assumes a Sonnet-class model on the customer's key and a rollup-pruned dispatch. A full-catalog run on a large PR is roughly $0.50. Competitor figures from vendor pricing pages and published reviews, mid-2026.</p>
+    </div>
+    <div>
+      <div class="stat"><b>&gt;80%</b><span>gross margin on Team and Enterprise tiers, because inference runs on the customer's key</span></div>
+      <div class="stat" style="margin-top:22px"><b>100 to 500x</b><span>cheaper per targeted review than the managed multi-agent option, which is why agents can call peons on every iteration, not once per PR</span></div>
+      <div class="stat" style="margin-top:22px"><b>$0</b><span>infrastructure cost for the free tier: the Action runs on the customer's runner, the registry is git</span></div>
+    </div>
+  </div>
+  <aside class="notes">This slide answers "why won't CodeRabbit just add this." Their model is a hosted full pass priced per seat or per review; ours is BYO key on a targeted pass. They cannot match the price without breaking their own margin, and they cannot ship a registry others publish to without giving up the review as their product.</aside>
+</section>
+
+<!-- 8 Market -->
+<section class="slide" aria-label="Slide 8">
+  <div class="bar" style="width:66.6%"></div>
+  <div class="slide-head"><span>Market</span><span class="n">8 / 12</span></div>
+  <h2>The category is funded and growing fast. Our plan needs well under 1% of it.</h2>
+  <div class="cols">
+    <div>
+      <h3>Named comparables, 2026</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Company</th><th>Signal</th></tr>
+        <tr><td>CodeRabbit</td><td>$143M Series C at $1.5B, August 2026. 17,000 customers, 2M reviews a week, revenue up 5x</td></tr>
+        <tr><td>Greptile</td><td>Series A at $180M valuation, Benchmark</td></tr>
+        <tr><td>Qodo</td><td>$121M raised across rounds to March 2026</td></tr>
+        <tr><td>Graphite</td><td>$81M raised, acquired by Cursor</td></tr>
+        <tr><td>Anthropic, GitHub, Cursor</td><td>Each shipped a first-party reviewer; GitHub metered it in June</td></tr>
+      </table></div>
+      <p class="small" style="margin-top:10px">Pure-play AI code review grew from $180M ARR in 2025 to $420M in 2026. AI code tools overall: $7.3B in 2025, projected above $29B at about 26% CAGR.</p>
+    </div>
+    <div>
+      <h3>Bottom-up, not top-down</h3>
+      <ul style="font-size:15px">
+        <li><b>Who.</b> Engineering teams of 5 to 500 in JavaScript and TypeScript shops that already run a coding agent. This is the population our five launch peons serve best and where the founder has distribution.</li>
+        <li><b>Calibration.</b> CodeRabbit alone has 17,000 paying customers. Our 2029 target is 1,000 paying teams, about 6% of that one competitor's base, at an average contract of roughly $3,900 a year.</li>
+        <li><b>Expansion.</b> GitLab support and the vault for other languages open the rest of the segment in 2028. Vendor peons (Vercel, Tailwind, Playwright, Sentry, TanStack) bring their user bases with them.</li>
+      </ul>
+      <div class="panel amber" style="margin-top:8px"><p style="margin:0;font-size:15px"><b>Why the open layer is empty.</b> Dozens of BYO-key review Actions exist; the two closest to us (nitpik, lupe) have single-digit stars. Nobody has combined a registry, evals, and context in one open tool. That is the gap, and it needs distribution more than capital.</p></div>
+    </div>
+  </div>
+  <aside class="notes">Investors in devtools want bottom-up sizing with named comparables. The 1,000-team target is deliberately modest against CodeRabbit's 17,000. The open-layer point is important: this is a distribution race, and the founder has it.</aside>
+</section>
+
+<!-- 9 Competition -->
+<section class="slide" aria-label="Slide 9">
+  <div class="bar" style="width:75%"></div>
+  <div class="slide-head"><span>Competition</span><span class="n">9 / 12</span></div>
+  <h2>Hosted and generic is crowded. Open, specialised and agent-callable has no owner.</h2>
+  <div class="cols c7-5">
+    <div>
+      <div class="axis" style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Generic, one pass</span><span>Specialised, many narrow reviewers</span></div>
+      <div class="quad">
+        <div><h3>Hosted, generic</h3><p>CodeRabbit, Greptile, Copilot review, Bugbot, CodeAnt, DeepSource. Per-seat or per-review. Path-scoped prompts at best. Well funded, feature-complete, and structurally unable to go cheap or open.</p></div>
+        <div><h3>Hosted, multi-agent</h3><p>Anthropic Code Review. The right architecture at the wrong price and shape: $15 to $25 per PR, 20 minutes, Team and Enterprise only, cannot be asked for one concern.</p></div>
+        <div><h3>Open, BYO key, one pass</h3><p>lupe, nitpik, and dozens of small GitHub Actions. No registry, no evals, no context model, no memory. Proof the demand exists; none has broken out.</p></div>
+        <div class="us"><h3>ci-peons</h3><p>Open registry of narrow reviewers with fixtures, team and feature context in the repo, a Boss that routes and learns from outcomes, and a CLI built for agents first.</p></div>
+      </div>
+      <div class="axis" style="display:flex;justify-content:space-between;margin-top:4px"><span>Hosted, vendor-owned</span><span>Open, in the customer's repo</span></div>
+    </div>
+    <div>
+      <h3>What they would have to give up to copy us</h3>
+      <ul style="font-size:15px">
+        <li><b>Their margin.</b> BYO key at three cents a run breaks a per-seat or per-review hosted model.</li>
+        <li><b>Their product.</b> An open registry means the reviewer is no longer the thing they sell.</li>
+        <li><b>Their data position.</b> Context and memory that live in the customer's repo remove the vendor's lock-in.</li>
+      </ul>
+      <h3 style="margin-top:18px">What we still have to prove</h3>
+      <ul style="font-size:15px">
+        <li>Frontend teams adopt a free Action at meetup scale, then org scale.</li>
+        <li>Fixture-tested peons measurably beat generic passes on precision.</li>
+        <li>Two or more framework vendors ship an official peon.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Be honest here; investors trust a competition slide that names what is unproven. The three "have to give up" points are the real moat argument. Registry, evals and context are ecosystem assets, not features.</aside>
+</section>
+
+<!-- 10 Business model and GTM -->
+<section class="slide" aria-label="Slide 10">
+  <div class="bar" style="width:83.3%"></div>
+  <div class="slide-head"><span>Business model and go-to-market</span><span class="n">10 / 12</span></div>
+  <h2>Free where value is created, paid where organisations need trust and control. One wedge, with evidence.</h2>
+  <div class="cols">
+    <div class="tablewrap">
+      <table>
+        <tr><th>Tier</th><th>What it adds</th><th class="n">Price</th></tr>
+        <tr><td>Open source</td><td>CLI, Action, MCP, public registry, local journal, BYO key, unlimited</td><td class="n">Free</td></tr>
+        <tr><td>Team</td><td>Private registry, org peon inheritance, hosted journal and cross-repo insights, Slack summaries</td><td class="n">$15 per dev per month</td></tr>
+        <tr><td>Enterprise</td><td>SSO, audit log, self-hosted registry and store, SLA</td><td class="n">$40 per dev per month</td></tr>
+        <tr><td>Verified vendor</td><td>Certified listing with published eval reports</td><td class="n">$1,000 per month</td></tr>
+      </table>
+      <p class="small" style="margin-top:10px">Hosted-key runs on Team are billed as pass-through plus 20%. Expected mix by 2029: 85% Team and Enterprise seats, 10% vendor, 5% hosted inference.</p>
+    </div>
+    <div>
+      <h3>The wedge: frontend teams, through channels the founder already owns</h3>
+      <ul style="font-size:15px">
+        <li>Five launch peons the generic tools do worst: accessibility, React, Next.js App Router, Core Web Vitals, TypeScript strictness.</li>
+        <li>Distribution in hand: ReactJS Barcelona (2,000 members, public beta cohort), the Señors @ Scale podcast (engineering leaders, our buyer), Real-World Next.js readers, the Lizard to Wizard workshop, and the 2027 conference calendar.</li>
+        <li>Every peon launch is an article with its eval numbers. Precision figures are the hook nobody else can post.</li>
+      </ul>
+      <h3 style="margin-top:16px">Then two expansion loops</h3>
+      <ul style="font-size:15px">
+        <li><b>Vendor peons.</b> Framework teams own an official peon because it enforces their best practices in customers' CI.</li>
+        <li><b>Team to org.</b> Land with one team on free; the platform group buys Team when they want a shared standard across repos. Org inheritance is the switching cost.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">One wedge with evidence beats a list of channels. The beta cohort is the meetup; the first ten paying teams should come from podcast guests' companies. Name them when you have them.</aside>
+</section>
+
+<!-- 11 Plan and financials -->
+<section class="slide" aria-label="Slide 11">
+  <div class="bar" style="width:91.6%"></div>
+  <div class="slide-head"><span>Plan and financials</span><span class="n">11 / 12</span></div>
+  <h2>Twelve months of gates before any raise. Each gate is a number.</h2>
+  <div class="gates">
+    <div class="gate hit"><h3>Q4 2026</h3><p style="font-size:13px;margin:0">Engine, CLI, Action, five peons with fixtures, Claude Code skill. <span class="k">Gate: 20 beta repos from the meetup, precision above 80% on fixtures.</span></p></div>
+    <div class="gate hit"><h3>Q1 2027</h3><p style="font-size:13px;margin:0">Public launch, <code>peons init</code>, <code>peons test</code>, git registry with lockfile. <span class="k">Gate: 1,500 repos, 3 vendor conversations open.</span></p></div>
+    <div class="gate hit"><h3>Q2 2027</h3><p style="font-size:13px;margin:0">From-reviews generator, org inheritance, deterministic Boss, local journal. Team tier private beta. <span class="k">Gate: 3,000 repos, 10 paying teams.</span></p></div>
+    <div class="gate hit"><h3>Q3 to Q4 2027</h3><p style="font-size:13px;margin:0">Vault for TypeScript, Boss learning from outcomes, Team GA with hosted journal, MCP server. <span class="k">Gate to raise: 5,000 repos, 50 paying teams, 3 vendor commitments.</span></p></div>
+  </div>
+  <div class="cols c7-5" style="margin-top:20px">
+    <div class="tablewrap">
+      <table>
+        <tr><th></th><th class="n">2027</th><th class="n">2028</th><th class="n">2029</th></tr>
+        <tr><td>Repos on the OSS action, year end</td><td class="n">3,000</td><td class="n">12,000</td><td class="n">30,000</td></tr>
+        <tr><td>Paying teams, year end</td><td class="n">50</td><td class="n">350</td><td class="n">1,000</td></tr>
+        <tr><td>Seats per team, blended price</td><td class="n">12 at $15</td><td class="n">15 at $16</td><td class="n">18 at $18</td></tr>
+        <tr><td>ARR run-rate, year end</td><td class="n">$0.13M</td><td class="n">$1.1M</td><td class="n">$4.2M</td></tr>
+        <tr><td>Revenue recognised</td><td class="n">$45k</td><td class="n">$550k</td><td class="n">$2.4M</td></tr>
+        <tr><td>Headcount and operating cost</td><td class="n">1.5, $150k</td><td class="n">4, $600k</td><td class="n">9, $1.6M</td></tr>
+        <tr><td>Net</td><td class="n">−$105k</td><td class="n">−$50k</td><td class="n">+$0.8M</td></tr>
+      </table>
+    </div>
+    <div>
+      <svg viewBox="0 0 420 175" width="100%" style="max-width:380px" role="img" aria-label="ARR run-rate at year end: 0.13M in 2027, 1.1M in 2028, 4.2M in 2029">
+        <line class="ln" x1="30" y1="150" x2="410" y2="150"/>
+        <rect class="bar-f" x="60" y="146" width="80" height="4"/><rect class="bar-f" x="170" y="116" width="80" height="34"/><rect class="bar-f" x="280" y="20" width="80" height="130"/>
+        <text x="100" y="168" text-anchor="middle" class="lbl">2027</text><text x="210" y="168" text-anchor="middle" class="lbl">2028</text><text x="320" y="168" text-anchor="middle" class="lbl">2029</text>
+        <text x="100" y="139" text-anchor="middle" font-size="13">$0.13M</text><text x="210" y="109" text-anchor="middle" font-size="13">$1.1M</text><text x="320" y="13" text-anchor="middle" font-size="13">$4.2M ARR</text>
+      </svg>
+      <p class="small" style="font-size:12.5px">Assumes about 3% of organisations on the free Action convert to Team within 12 months, logo churn from 5% monthly falling to 2%, and inference on customers' keys. Most sensitive to OSS adoption, not price: halving 2028 repos pushes breakeven to mid-2030; halving price delays it two quarters.</p>
+    </div>
+  </div>
+  <aside class="notes">Gates are the plan. The three-year table is a story about what happens if the gates hold. Say that out loud; it builds more trust than defending 2029 numbers.</aside>
+</section>
+
+<!-- 12 Team, ask, risks -->
+<section class="slide" aria-label="Slide 12">
+  <div class="bar" style="width:100%"></div>
+  <div class="slide-head"><span>Team, ask, risks</span><span class="n">12 / 12</span></div>
+  <div class="cols3">
+    <div>
+      <h3>Dan Neciu, founder</h3>
+      <ul style="font-size:14.5px">
+        <li>Engineering Manager and Staff Engineer at Perk, leading Perk Events.</li>
+        <li>Staff Engineer at Rover: microfrontend architecture across three brands in a 1,000-engineer org; launched a multi-tier system in the US and Canada.</li>
+        <li>Glovo: took Core Web Vitals from 50% to 90% green.</li>
+        <li>Technical co-founder, CareerOS: led build and scaling of the main app.</li>
+        <li>Author of Real-World Next.js (Packt). Organiser of ReactJS Barcelona. Host of Señors @ Scale. Speaker at React Summit, React Alicante, JSHeroes and others.</li>
+      </ul>
+      <p class="small">First hire, 2027: one contract engineer. Seed hires: three engineers, one DevRel.</p>
+    </div>
+    <div>
+      <h3>The ask</h3>
+      <p style="font-size:15px">Not raising today. Year one runs inside Venceda SL, bootstrapped.</p>
+      <p style="font-size:15px">If the Q4 2027 gate is hit (5,000 repos, 50 paying teams, 3 vendor commitments): <b>$1.5M seed</b> for 24 months of runway.</p>
+      <h3 style="margin-top:14px">What it buys, by date</h3>
+      <ul style="font-size:14.5px">
+        <li>Q2 2028: Enterprise tier and GitLab support shipped.</li>
+        <li>Q3 2028: three official vendor peons live.</li>
+        <li>Q4 2028: 350 paying teams, $1.1M ARR run-rate.</li>
+        <li>Q4 2029: breakeven at 1,000 teams.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Risks we are planning around</h3>
+      <ul style="font-size:14.5px">
+        <li><b>Platform absorption.</b> GitHub or Anthropic ship scoped, testable reviewers natively. Answer: provider-agnostic, GitLab, and a registry plus evals that are ecosystem assets, not features.</li>
+        <li><b>Funnel does not convert.</b> Answer: the raise is conditional on the numbers; the company stays part-time until they exist.</li>
+        <li><b>Supply chain in third-party peons.</b> Answer: permissions manifest enforced by the runner, lockfile hashes, printed on install.</li>
+        <li><b>Founder time.</b> Answer: year one is scoped to what one person and a contractor ship, inside the founder's core expertise.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Close on the gate, not the vision: "Come back to us in Q4 2027 and we will show you the numbers on this slide, or we will not be raising." That line is the credibility of the whole deck.</aside>
+</section>
+
+</div></div>
+<div class="foot">
+  <span><span id="cur">1</span> / 12<span class="small" style="margin-left:14px">Arrows to move, N for notes, Ctrl+P for PDF</span></span>
+  <span><button type="button" id="notes-btn" aria-pressed="false">Notes</button><button type="button" id="prev" aria-label="Previous slide">Previous</button><button type="button" id="next" aria-label="Next slide">Next</button></span>
+</div>
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const canvas = document.getElementById('canvas');
+  const cur = document.getElementById('cur');
+  let i = 0;
+  function fit() {
+    if (window.innerWidth <= 900) { canvas.style.transform = ''; return; }
+    const s = Math.min(window.innerWidth / 1280, (window.innerHeight - 48) / 720);
+    canvas.style.transform = 'scale(' + s + ')';
+  }
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    cur.textContent = i + 1;
+    try { localStorage.setItem('ci-peons-deck-slide', String(i)); } catch (e) {}
+  }
+  document.getElementById('prev').addEventListener('click', () => show(i - 1));
+  document.getElementById('next').addEventListener('click', () => show(i + 1));
+  const nb = document.getElementById('notes-btn');
+  function toggleNotes() { const on = document.body.classList.toggle('show-notes'); nb.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  nb.addEventListener('click', toggleNotes);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    if (e.key === 'n' || e.key === 'N') toggleNotes();
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+  window.addEventListener('resize', fit);
+  fit();
+  try { const saved = parseInt(localStorage.getItem('ci-peons-deck-slide') || '0', 10); show(isNaN(saved) ? 0 : saved); } catch (e) { show(0); }
+</script>
+</body>
+</html>
