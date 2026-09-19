@@ -17,3 +17,4 @@ export * from "./cache.ts";
 export * from "./format/index.ts";
 export * from "./journal.ts";
 export * from "./run.ts";
+export * from "./test.ts";
