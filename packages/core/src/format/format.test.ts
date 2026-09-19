@@ -13,7 +13,7 @@ export const SAMPLE: RunResult = {
       message: "Icon button has no accessible name.", evidence: ["<button>", "  <Icon />", "</button>"], fingerprint: "e".repeat(64) },
   ],
   peons: [{ name: "a11y", version: "1.0.0", status: "ok", durationMs: 4200, findings: 2, usage: { inputTokens: 1200, outputTokens: 80, cacheReadTokens: 900 } }],
-  redactions: 1, dropped: [], exit: 1, durationMs: 4300,
+  redactions: 1, dropped: [], warnings: [], exit: 1, durationMs: 4300,
 };
 const golden = (n: string) => readFileSync(join(import.meta.dir, "__golden__", n), "utf8");
 
@@ -27,4 +27,9 @@ test("review payload: inline for diff lines, summary for the rest, skips existin
   expect(p.comments[0]).toMatchObject({ path: "src/a.tsx", line: 4 });
   expect(p.comments[0]!.body).toContain("<!-- peons:fp:ffff");
   expect(p.body).not.toContain("Icon button"); // already posted
+});
+test("agent format lists change-set warnings after the redaction line", () => {
+  const out = formatAgent({ ...SAMPLE, warnings: ["src/bin.png: binary, skipped", "../x.tsx: outside the repository, skipped"] });
+  expect(out).toContain("Redactions: 1\nWarnings: src/bin.png: binary, skipped; ../x.tsx: outside the repository, skipped\n");
+  expect(formatAgent(SAMPLE)).not.toContain("Warnings:");
 });

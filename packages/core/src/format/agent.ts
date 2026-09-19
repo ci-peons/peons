@@ -20,6 +20,7 @@ export function formatAgent(r: RunResult): string {
     return `${p.name}@${p.version} ${p.status}${u}`;
   }).join("; "));
   if (r.redactions) out.push(`Redactions: ${r.redactions}`);
+  if (r.warnings.length) out.push("Warnings: " + r.warnings.join("; "));
   if (r.dropped.length) out.push(`Dropped: ${r.dropped.map((d) => `${d.item} (${d.reason})`).join("; ")}`);
   out.push(`Exit code ${r.exit}: ${exitMeaning(r.exit)}`);
   return out.join("\n") + "\n";

@@ -9,7 +9,7 @@ export type PeonRunStatus = {
 export type DroppedItem = { peon: string; item: string; reason: string };
 export type RunResult = {
   plan: Plan; findings: Finding[]; peons: PeonRunStatus[]; redactions: number;
-  dropped: DroppedItem[]; exit: 0 | 1 | 2; durationMs: number;
+  dropped: DroppedItem[]; warnings: string[]; exit: 0 | 1 | 2; durationMs: number;
 };
 export type CheckScore = {
   peon: string; check: string; expected: number; fired: number; truePositives: number;

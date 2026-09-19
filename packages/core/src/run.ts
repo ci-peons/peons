@@ -78,7 +78,7 @@ export async function run(opts: RunOptions): Promise<RunResult> {
   const exit: 0 | 1 | 2 = peons.some((p) => p.status === "error") ? 2 : allFindings.some((f) => atLeast(f.severity, blockFor(f))) ? 1 : 0;
   const result: RunResult = {
     plan, findings, peons, redactions: results.reduce((n, r) => n + r.redactions, 0),
-    dropped: results.flatMap((r) => r.dropped), exit, durationMs: Date.now() - t0,
+    dropped: results.flatMap((r) => r.dropped), warnings: changes.warnings, exit, durationMs: Date.now() - t0,
   };
   for (const f of findings) await journal.append({ type: "finding", at: new Date().toISOString(), run: runRef, peon: f.peon, id: f.fingerprint.slice(0, 16), file: f.file, range: f.range, check: f.check, severity: f.severity, evidence: f.evidence, fingerprint: f.fingerprint });
   await journal.append({ type: "run_complete", at: new Date().toISOString(), run: runRef, findings: findings.length, cost_usd: 0, duration_ms: result.durationMs, exit });
