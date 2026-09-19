@@ -33,3 +33,9 @@ test("agent format lists change-set warnings after the redaction line", () => {
   expect(out).toContain("Redactions: 1\nWarnings: src/bin.png: binary, skipped; ../x.tsx: outside the repository, skipped\n");
   expect(formatAgent(SAMPLE)).not.toContain("Warnings:");
 });
+test("evidence containing a code fence is wrapped in a longer fence", () => {
+  const f = SAMPLE.findings[0]!;
+  const out = formatAgent({ ...SAMPLE, findings: [{ ...f, evidence: ["const md = `x`;", "```", "~~~", "````"] }] });
+  expect(out).toContain("\n`````\nconst md = `x`;\n```\n~~~\n````\n`````\n");
+  expect(formatAgent(SAMPLE)).toContain("\n```\n<img src=\"/logo.png\" />\n```\n");   // plain evidence keeps three
+});

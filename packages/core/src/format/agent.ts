@@ -3,13 +3,20 @@ export function exitMeaning(exit: 0 | 1 | 2): string {
   return exit === 0 ? "no finding meets the block severity" : exit === 1 ? "at least one finding meets the block severity" : "engine error, see peon statuses";
 }
 const secs = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+/** A fence that cannot be closed early by backticks inside the evidence itself. */
+export function evidenceFence(evidence: string[]): string {
+  let longest = 0;
+  for (const line of evidence) for (const run of line.match(/`+/g) ?? []) longest = Math.max(longest, run.length);
+  return "`".repeat(Math.max(3, longest + 1));
+}
 export function formatAgent(r: RunResult): string {
   const out: string[] = [];
   const ran = r.peons.filter((p) => p.status !== "skipped").length;
   out.push(`# peons: ${r.findings.length} finding${r.findings.length === 1 ? "" : "s"} from ${ran} peon${ran === 1 ? "" : "s"} in ${secs(r.durationMs)}`, "");
   for (const f of r.findings) {
     const loc = f.range[0] === f.range[1] ? `${f.range[0]}` : `${f.range[0]}-${f.range[1]}`;
-    out.push(`## [${f.severity.toUpperCase()}] ${f.file}:${loc} · ${f.peon.name}/${f.check}`, f.message, "```", ...f.evidence, "```");
+    const fence = evidenceFence(f.evidence);
+    out.push(`## [${f.severity.toUpperCase()}] ${f.file}:${loc} · ${f.peon.name}/${f.check}`, f.message, fence, ...f.evidence, fence);
     if (f.fix) out.push(`Fix: ${f.fix}`);
     out.push("");
   }
