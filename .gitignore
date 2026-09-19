@@ -2,3 +2,4 @@
 node_modules/
 .peons/cache/
 .peons/journal/
+.superpowers/
