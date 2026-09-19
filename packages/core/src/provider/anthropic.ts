@@ -24,7 +24,7 @@ export class AnthropicProvider implements Provider {
       });
     } catch (e) {
       const err = e as { status?: number; message: string };
-      throw new EngineError("PROVIDER", `Anthropic request failed${err.status ? ` (${err.status})` : ""}: ${err.message}`);
+      throw new EngineError("PROVIDER", `Anthropic request failed${err.status ? ` (${err.status})` : ""}: ${err.message}`, { status: err.status, cause: e });
     }
     const tool = res.content.find((c): c is Anthropic.ToolUseBlock => c.type === "tool_use");
     if (!tool) throw new EngineError("PROVIDER", "model did not call report_findings");

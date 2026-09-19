@@ -1,22 +1,29 @@
-import { RawFindingsSchema, fingerprint, type Finding, type DroppedItem } from "@peons/schema";
+import { z } from "zod";
+import { RawFindingSchema, fingerprint, type Finding, type DroppedItem } from "@peons/schema";
 import type { ContextPack } from "./context.ts";
 
 const INJECTION = [
   /ignore (all |any )?(previous|prior|above) instructions/i,
   /\brun\b[^.]{0,40}`[^`]+`/i,
-  /\b(rm -rf|curl |wget |chmod |sudo )/i,
+  /\b(run|execute|type|use|try)\b[^.\n]{0,40}\b(rm -rf|curl|wget|chmod|sudo|bash|sh)\b/i,
   /\b(visit|open|fetch|go to)\b[^.]{0,30}https?:\/\//i,
   /\b(edit|modify|delete|create)\b[^.]{0,40}\b(file|files)\b[^.]{0,40}\b(outside|other than|not in)\b/i,
 ];
+const LooseFindingsEnvelope = z.object({ findings: z.array(z.unknown()) });
+const LooseFindingSchema = RawFindingSchema.extend({ evidence: z.array(z.string()).min(1) });
+
 function lineCount(content: string): number { const n = content.split("\n").length; return content.endsWith("\n") ? n - 1 : n; }
 
 export function postFilter(raw: unknown, pack: ContextPack): { findings: Finding[]; dropped: DroppedItem[] } {
   const dropped: DroppedItem[] = []; const findings: Finding[] = [];
-  const parsed = RawFindingsSchema.safeParse(raw);
-  if (!parsed.success) { dropped.push({ peon: pack.peon.name, item: "model output", reason: "did not match findings schema: " + parsed.error.issues.map((i) => i.path.join(".") + " " + i.message).join("; ") }); return { findings, dropped }; }
+  const envelope = LooseFindingsEnvelope.safeParse(raw);
+  if (!envelope.success) { dropped.push({ peon: pack.peon.name, item: "model output", reason: "did not match findings schema: " + envelope.error.issues.map((i) => i.path.join(".") + " " + i.message).join("; ") }); return { findings, dropped }; }
   const checkIds = new Set(pack.peon.checks.map((c) => c.id));
   const files = new Map(pack.files.map((f) => [f.path, f]));
-  for (const r of parsed.data.findings) {
+  for (const entry of envelope.data.findings) {
+    const parsed = LooseFindingSchema.safeParse(entry);
+    if (!parsed.success) { dropped.push({ peon: pack.peon.name, item: "model output", reason: "did not match finding schema: " + parsed.error.issues.map((i) => i.path.join(".") + " " + i.message).join("; ") }); continue; }
+    const r = parsed.data;
     const item = `${r.file}:${r.range[0]} ${r.check}`;
     if (!checkIds.has(r.check)) { dropped.push({ peon: pack.peon.name, item, reason: "unknown check" }); continue; }
     const file = files.get(r.file);

@@ -28,6 +28,36 @@ test("malformed raw output drops everything with reason", () => {
   expect(r.findings).toEqual([]); expect(r.dropped[0]!.reason).toMatch(/schema/);
 });
 test("evidence trimmed to 8 lines", () => {
-  const r = postFilter({ findings: [{ ...ok, range: [1, 3], evidence: Array(8).fill("l1") }] }, pack);
+  const r = postFilter({ findings: [{ ...ok, range: [1, 3], evidence: Array(9).fill("l1") }] }, pack);
+  expect(r.findings[0]!.evidence).toHaveLength(8);
+});
+
+// Finding 1: injection filter should only fire on imperative phrasing, not descriptive security prose.
+test("descriptive security message mentioning shell tokens is kept", () => {
+  const r = postFilter({ findings: [{ ...ok, message: "This script pipes curl output directly into sudo bash" }] }, pack);
+  expect(r.findings).toHaveLength(1);
+  expect(r.dropped).toEqual([]);
+});
+test("imperative shell instruction is dropped as instruction-shaped", () => {
+  const r = postFilter({ findings: [{ ...ok, message: "Run `rm -rf node_modules` and reinstall" }] }, pack);
+  expect(r.findings).toHaveLength(0);
+  expect(r.dropped[0]!.reason).toBe("instruction-shaped message");
+});
+test("non-imperative citation URL is kept", () => {
+  const r = postFilter({ findings: [{ ...ok, message: "See WCAG 1.1.1 at https://www.w3.org/WAI/WCAG22/Understanding/non-text-content" }] }, pack);
+  expect(r.findings).toHaveLength(1);
+  expect(r.dropped).toEqual([]);
+});
+
+// Finding 2: per-finding validation should not fail the whole batch.
+test("one malformed finding is dropped individually, valid ones are kept", () => {
+  const r = postFilter({ findings: [ok, { ...ok, range: "nope" }] }, pack);
+  expect(r.findings).toHaveLength(1);
+  expect(r.dropped).toHaveLength(1);
+  expect(r.dropped[0]!.reason).toMatch(/finding schema/);
+});
+test("finding with 9 evidence lines is kept trimmed to 8", () => {
+  const r = postFilter({ findings: [{ ...ok, evidence: Array(9).fill("l2") }] }, pack);
+  expect(r.findings).toHaveLength(1);
   expect(r.findings[0]!.evidence).toHaveLength(8);
 });
