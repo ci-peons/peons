@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-export function Profile({ userId }: { userId: string }) {
-  const [name, setName] = useState("");
+import { useEffect } from "react";
+export function Title({ userId }: { userId: string }) {
   useEffect(() => {
-    fetch(`/api/users/${userId}`).then((r) => r.json()).then((u) => setName(u.name));
+    document.title = `User ${userId}`;
   }, []);
-  return <p>{name}</p>;
+  return <h1>Profile</h1>;
 }
