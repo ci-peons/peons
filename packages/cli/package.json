@@ -1,14 +1,21 @@
 {
   "name": "peons",
   "version": "0.1.0",
+  "description": "Specialised, testable AI code reviewers: run peons over a change set from the terminal",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/ci-peons/peons" },
+  "engines": { "node": ">=20" },
   "type": "module",
+  "main": "./dist/index.js",
   "bin": { "peons": "./dist/index.js" },
   "files": ["dist"],
-  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist" },
+  "scripts": { "build": "bun build src/index.ts --target=node --outdir=dist", "prepublishOnly": "bun run build" },
   "dependencies": {
-    "@peons/core": "workspace:*", "@peons/schema": "workspace:*",
     "commander": "^12.1.0", "ink": "^5.0.1", "ink-spinner": "^5.0.0", "react": "^18.3.1",
     "@clack/prompts": "^0.7.0", "picocolors": "^1.1.0"
   },
-  "devDependencies": { "@types/react": "^18.3.0", "ink-testing-library": "^4.0.0" }
+  "devDependencies": {
+    "@peons/core": "workspace:*", "@peons/schema": "workspace:*",
+    "@types/react": "^18.3.0", "ink-testing-library": "^4.0.0"
+  }
 }
