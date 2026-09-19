@@ -1,0 +1,4 @@
+provider: anthropic
+peons:
+  - use: ./peons/a11y
+  - use: ./peons/react
