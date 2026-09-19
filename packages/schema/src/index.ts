@@ -5,3 +5,7 @@ export * from "./glob.ts";
 export * from "./manifest.ts";
 export * from "./body.ts";
 export * from "./peon.ts";
+export * from "./finding.ts";
+export * from "./run.ts";
+export * from "./events.ts";
+export * from "./expect.ts";
