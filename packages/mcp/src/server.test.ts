@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { FakeProvider, run } from "@peons/core";
+import { FakeProvider } from "@peons/core";
+import { runCli } from "../../cli/src/index.ts";
 import { createServer } from "./server.ts";
 
 function repo(): string {
@@ -30,11 +31,20 @@ test("lists tools and peons", async () => {
   const r = await c.callTool({ name: "list_peons", arguments: {} }) as { content: Array<{ text: string }> };
   expect(JSON.parse(r.content[0]!.text)[0].name).toBe("p@1.0.0");
 });
-test("surface parity: MCP run_peons findings equal core run() findings byte for byte", async () => {
-  const root = repo(); const c = await client(root);
-  const viaMcp = await c.callTool({ name: "run_peons", arguments: { scope: "files", files: ["a.tsx"] } }) as { content: Array<{ text: string }>; structuredContent?: unknown };
-  const direct = await run({ root, scope: { kind: "files", paths: ["a.tsx"] }, surface: "cli", provider: new FakeProvider(script), noCache: true });
-  const mcpResult = JSON.parse(viaMcp.content[1]!.text);
-  expect(JSON.stringify(mcpResult.findings)).toBe(JSON.stringify(direct.findings));
+test("surface parity: MCP run_peons findings equal the CLI json output byte for byte", async () => {
+  const root = repo();
+  // The CLI goes first with --no-cache so it is the uncached path; MCP may then serve from cache.
+  let stdout = ""; let stderr = "";
+  const exit = await runCli(
+    ["run", "--scope", "files", "a.tsx", "--format", "json", "--no-cache"],
+    { cwd: root, stdout: (s) => { stdout += s; }, stderr: (s) => { stderr += s; } },
+    { provider: new FakeProvider(script), tty: false },
+  );
+  expect(exit).toBe(1);
+  const viaCli = JSON.parse(stdout) as { findings: unknown[] };
+  const c = await client(root);
+  const viaMcp = await c.callTool({ name: "run_peons", arguments: { scope: "files", files: ["a.tsx"] } }) as { content: Array<{ text: string }> };
+  const mcpResult = JSON.parse(viaMcp.content[1]!.text) as { findings: unknown[] };
+  expect(JSON.stringify(mcpResult.findings)).toBe(JSON.stringify(viaCli.findings));
   expect(viaMcp.content[0]!.text).toContain("## [HIGH] a.tsx:1 · p/c");
 });
