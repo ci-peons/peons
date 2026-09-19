@@ -14,7 +14,11 @@ const PATTERNS: Array<[string, RegExp]> = [
   ["jwt", /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g],
   ["bearer", /\bBearer\s+[A-Za-z0-9._~+/=-]{20,}/g],
 ];
-const ASSIGN = /\b([A-Za-z_][A-Za-z0-9_]*(?:key|secret|token|password|passwd|pwd)[A-Za-z0-9_]*)\s*[:=]\s*(["'`])([^"'`\s]{20,})\2/gi;
+// Bounded quantifiers ({0,80}) on every repeated group keep this from backtracking
+// catastrophically on long punctuation-free runs; the secret-like-name check moved
+// into the callback so the regex itself no longer needs an unbounded alternation.
+const ASSIGN = /\b([A-Za-z_][A-Za-z0-9_]{0,80})(\s*(?::\s*[^=\n"'`]{0,80})?\s*)([:=])(\s*)(["'`])([^"'`\s]{20,})\5/g;
+const SECRET_NAME = /key|secret|token|password|passwd|pwd/i;
 
 function entropy(s: string): number {
   const f = new Map<string, number>(); for (const c of s) f.set(c, (f.get(c) ?? 0) + 1);
@@ -23,9 +27,9 @@ function entropy(s: string): number {
 export function redactText(text: string): { text: string; count: number } {
   let count = 0; let out = text;
   for (const [kind, re] of PATTERNS) out = out.replace(re, (m) => { count++; return kind === "bearer" ? `Bearer <REDACTED:bearer>` : `<REDACTED:${kind}>`; });
-  out = out.replace(ASSIGN, (m, name: string, q: string, val: string) => {
-    if (val.startsWith("<REDACTED:") || entropy(val) < 3.5) return m;
-    count++; return `${name} = ${q}<REDACTED:high-entropy>${q}`;
+  out = out.replace(ASSIGN, (m, name: string, typeAnnotation: string, separator: string, spaces: string, quote: string, val: string) => {
+    if (!SECRET_NAME.test(name) || val.startsWith("<REDACTED:") || entropy(val) < 3.5) return m;
+    count++; return `${name}${typeAnnotation}${separator}${spaces}${quote}<REDACTED:high-entropy>${quote}`;
   });
   return { text: out, count };
 }

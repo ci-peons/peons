@@ -27,3 +27,21 @@ test("plain code untouched", () => {
   const src = "export function add(a: number, b: number) { return a + b; }";
   expect(redactText(src)).toEqual({ text: src, count: 0 });
 });
+test("colon-style assignment preserves the separator", () => {
+  const r = redactText(`apiKey: "q8Zk2mN7pL4vX9wR3tY6uB1cD5fG0hJa"`);
+  expect(r.count).toBe(1);
+  expect(r.text).toBe(`apiKey: "<REDACTED:high-entropy>"`);
+});
+test("typed TypeScript declaration is redacted", () => {
+  const r = redactText(`const apiKey: string = "q8Zk2mN7pL4vX9wR3tY6uB1cD5fG0hJa";`);
+  expect(r.count).toBe(1);
+  expect(r.text).toBe(`const apiKey: string = "<REDACTED:high-entropy>";`);
+});
+test("does not catastrophically backtrack on long punctuation-free runs", () => {
+  const input = "a".repeat(400_000) + "key" + "b".repeat(400_000);
+  const start = performance.now();
+  const r = redactText(input);
+  const elapsed = performance.now() - start;
+  expect(elapsed).toBeLessThan(500);
+  expect(r.count).toBe(0);
+});
