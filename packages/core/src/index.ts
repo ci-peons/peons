@@ -16,3 +16,4 @@ export * from "./merge.ts";
 export * from "./cache.ts";
 export * from "./format/index.ts";
 export * from "./journal.ts";
+export * from "./run.ts";
