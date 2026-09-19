@@ -7,3 +7,7 @@ export * from "./changeset.ts";
 export * from "./planner.ts";
 export * from "./context.ts";
 export * from "./redact.ts";
+export * from "./provider/types.ts";
+export * from "./provider/prompt.ts";
+export * from "./provider/fake.ts";
+export * from "./provider/anthropic.ts";
