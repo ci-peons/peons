@@ -56,32 +56,45 @@ export async function run(opts: RunOptions): Promise<RunResult> {
   const plan = await (opts.planner ?? new PathPlanner()).plan(cfg, changes, { names: opts.names, allFiles: opts.allFiles });
   emit({ type: "plan", plan });
   const runRef: RunRef = { tenant: "local", repo: basename(opts.root), sha: changes.sha, base: changes.base, surface: opts.surface };
+  // Resolve the provider (and with it the API key) before the plan event is journalled, so a
+  // missing key cannot leave an orphan "plan" line behind with no matching run_complete.
+  const provider = plan.entries.length ? (opts.provider ?? (await defaultProvider())) : (opts.provider ?? null);
   const journal = new Journal(join(opts.root, ".peons", "journal"), cfg.journal);
   await journal.append({ type: "plan", at: new Date().toISOString(), run: runRef, peons: plan.entries.map((e) => ({ name: e.peon, version: cfg.peons.find((p) => p.name === e.peon)!.version, files: e.files.map((f) => f.path), reasons: e.files.map((f) => f.reason) })) });
-  const provider = plan.entries.length ? (opts.provider ?? (await defaultProvider())) : (opts.provider ?? null);
-  const cache = opts.noCache ? null : new FindingsCache(join(opts.root, ".peons", "cache"));
-  const byPath = new Map(changes.files.map((f) => [f.path, f]));
-  const results = await Promise.all(plan.entries.map(async (entry) => {
-    const peon = cfg.peons.find((p) => p.name === entry.peon)!;
-    emit({ type: "peon:start", name: peon.name, version: peon.version, files: entry.files.length });
-    const r = await runOne(peon, entry.files.map((f) => byPath.get(f.path)!), cfg, provider!, cache);
-    emit({ type: "peon:done", status: r.status });
-    return r;
-  }));
-  const allFindings = results.flatMap((r) => r.findings);
-  const findings = mergeFindings(allFindings);
-  const peons = results.map((r) => r.status);
-  const blockFor = (f: Finding): Severity => opts.failOn ?? cfg.peons.find((p) => p.name === f.peon.name)!.block;
-  // Evaluated over the pre-merge findings so each finding is judged against its own peon's
-  // threshold; merging keeps only one duplicate and would otherwise make the exit code depend
-  // on peons.yaml order when two peons report the same finding at the same severity.
-  const exit: 0 | 1 | 2 = peons.some((p) => p.status === "error") ? 2 : allFindings.some((f) => atLeast(f.severity, blockFor(f))) ? 1 : 0;
-  const result: RunResult = {
-    plan, findings, peons, redactions: results.reduce((n, r) => n + r.redactions, 0),
-    dropped: results.flatMap((r) => r.dropped), warnings: changes.warnings, exit, durationMs: Date.now() - t0,
-  };
-  for (const f of findings) await journal.append({ type: "finding", at: new Date().toISOString(), run: runRef, peon: f.peon, id: f.fingerprint.slice(0, 16), file: f.file, range: f.range, check: f.check, severity: f.severity, evidence: f.evidence, fingerprint: f.fingerprint });
-  await journal.append({ type: "run_complete", at: new Date().toISOString(), run: runRef, findings: findings.length, cost_usd: 0, duration_ms: result.durationMs, exit });
-  emit({ type: "done", result });
-  return result;
+  try {
+    return await finish();
+  } catch (e) {
+    // Every journalled plan gets a run_complete, even when the run dies (a PermissionError, say),
+    // so a reader never sees a plan that apparently never ended.
+    await journal.append({ type: "run_complete", at: new Date().toISOString(), run: runRef, findings: 0, cost_usd: 0, duration_ms: Date.now() - t0, exit: 2 });
+    throw e;
+  }
+
+  async function finish(): Promise<RunResult> {
+    const cache = opts.noCache ? null : new FindingsCache(join(opts.root, ".peons", "cache"));
+    const byPath = new Map(changes.files.map((f) => [f.path, f]));
+    const results = await Promise.all(plan.entries.map(async (entry) => {
+      const peon = cfg.peons.find((p) => p.name === entry.peon)!;
+      emit({ type: "peon:start", name: peon.name, version: peon.version, files: entry.files.length });
+      const r = await runOne(peon, entry.files.map((f) => byPath.get(f.path)!), cfg, provider!, cache);
+      emit({ type: "peon:done", status: r.status });
+      return r;
+    }));
+    const allFindings = results.flatMap((r) => r.findings);
+    const findings = mergeFindings(allFindings);
+    const peons = results.map((r) => r.status);
+    const blockFor = (f: Finding): Severity => opts.failOn ?? cfg.peons.find((p) => p.name === f.peon.name)!.block;
+    // Evaluated over the pre-merge findings so each finding is judged against its own peon's
+    // threshold; merging keeps only one duplicate and would otherwise make the exit code depend
+    // on peons.yaml order when two peons report the same finding at the same severity.
+    const exit: 0 | 1 | 2 = peons.some((p) => p.status === "error") ? 2 : allFindings.some((f) => atLeast(f.severity, blockFor(f))) ? 1 : 0;
+    const result: RunResult = {
+      plan, findings, peons, redactions: results.reduce((n, r) => n + r.redactions, 0),
+      dropped: results.flatMap((r) => r.dropped), warnings: changes.warnings, exit, durationMs: Date.now() - t0,
+    };
+    for (const f of findings) await journal.append({ type: "finding", at: new Date().toISOString(), run: runRef, peon: f.peon, id: f.fingerprint.slice(0, 16), file: f.file, range: f.range, check: f.check, severity: f.severity, evidence: f.evidence, fingerprint: f.fingerprint });
+    await journal.append({ type: "run_complete", at: new Date().toISOString(), run: runRef, findings: findings.length, cost_usd: 0, duration_ms: result.durationMs, exit });
+    emit({ type: "done", result });
+    return result;
+  }
 }
