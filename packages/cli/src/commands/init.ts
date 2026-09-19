@@ -5,6 +5,7 @@ import peonsYaml from "../templates/peons.yaml" with { type: "text" };
 import skillMd from "../templates/skill.md" with { type: "text" };
 import commandMd from "../templates/command.md" with { type: "text" };
 import type { Ctx } from "../index.ts";
+import { NO_REGISTRY_YET } from "../messages.ts";
 
 async function writeIfMissing(path: string, content: string, ctx: Ctx): Promise<boolean> {
   try { await access(path); ctx.stderr(`exists, kept: ${path}\n`); return false; }
@@ -22,7 +23,8 @@ export async function init(opts: { claude?: boolean; yes?: boolean }, ctx: Ctx, 
     await writeIfMissing(join(ctx.cwd, ".claude", "skills", "peons", "SKILL.md"), skillMd, ctx);
     await writeIfMissing(join(ctx.cwd, ".claude", "commands", "peons.md"), commandMd, ctx);
   }
-  if (tty && !opts.yes) p.outro("Next: peons add a11y, then peons run --scope staged. Set PEONS_API_KEY in your shell.");
-  else ctx.stdout("Next: peons add a11y, then peons run --scope staged. Set PEONS_API_KEY in your shell.\n");
+  const next = `${NO_REGISTRY_YET} Then: peons run --scope staged. Set PEONS_API_KEY in your shell.`;
+  if (tty && !opts.yes) p.outro(next);
+  else ctx.stdout(next + "\n");
   return 0;
 }

@@ -14,6 +14,17 @@ test("init writes config, gitignore and claude files", async () => {
   expect(existsSync(join(cwd, ".claude/skills/peons/SKILL.md"))).toBe(true);
   expect(existsSync(join(cwd, ".claude/commands/peons.md"))).toBe(true);
   expect(await runCli(["init", "--yes"], { cwd, ...c })).toBe(0); // idempotent, does not overwrite
+  expect(c.out()).toContain("Registry install (peons add) is not available yet.");
+  expect(c.out()).toContain("- use: ./peons/a11y");
+  expect(c.out()).not.toContain("Next: peons add");
+  expect(readFileSync(join(cwd, "peons.yaml"), "utf8")).toContain('Registry install ("peons add a11y") is not available yet');
+});
+test("list with no peons points at a local peon directory, not the registry", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "cli-")); const c = capture();
+  writeFileSync(join(cwd, "peons.yaml"), "peons: []\n");
+  expect(await runCli(["list"], { cwd, ...c })).toBe(0);
+  expect(c.out()).toContain("No peons configured. Registry install (peons add) is not available yet.");
+  expect(c.out()).not.toContain("Try: peons add");
 });
 test("list and plan in plain mode; missing config is exit 2", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "cli-")); const c = capture();
