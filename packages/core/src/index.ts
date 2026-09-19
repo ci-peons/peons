@@ -5,3 +5,4 @@ export * from "./git.ts";
 export * from "./diff.ts";
 export * from "./changeset.ts";
 export * from "./planner.ts";
+export * from "./context.ts";
