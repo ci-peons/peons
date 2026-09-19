@@ -11,3 +11,6 @@ export * from "./provider/types.ts";
 export * from "./provider/prompt.ts";
 export * from "./provider/fake.ts";
 export * from "./provider/anthropic.ts";
+export * from "./postfilter.ts";
+export * from "./merge.ts";
+export * from "./cache.ts";
