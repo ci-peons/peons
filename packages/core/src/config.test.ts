@@ -51,6 +51,13 @@ test("installed peon with wrong integrity is an EngineError", async () => {
   writeFileSync(join(root, "peons.lock"), `lockfile: 1\npackages:\n  a11y:\n    version: 1.0.0\n    integrity: sha256-bogus\n    permissions:\n      read: ["**/*.tsx"]\n`);
   await expect(loadConfig(root)).rejects.toBeInstanceOf(EngineError);
 });
+test("installed peon with mismatched permissions is an EngineError", async () => {
+  const root = repo(`peons:\n  - use: a11y\n`, { installed: true });
+  const integrity = await hashPeonDir(join(root, ".peons/installed/a11y/1.0.0"));
+  writeFileSync(join(root, "peons.lock"), `lockfile: 1\npackages:\n  a11y:\n    version: 1.0.0\n    integrity: ${integrity}\n    permissions:\n      read: ["src/**"]\n`);
+  await expect(loadConfig(root)).rejects.toBeInstanceOf(EngineError);
+  await expect(loadConfig(root)).rejects.toThrow(/permissions/);
+});
 test("missing lock entry is an EngineError naming peons add", async () => {
   const root = repo(`peons:\n  - use: a11y\n`);
   await expect(loadConfig(root)).rejects.toThrow(/peons add/);
