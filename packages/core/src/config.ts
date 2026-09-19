@@ -97,6 +97,13 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
       enabled: entry.enabled, reason: entry.reason,
     });
   }
+  // Two entries resolving to the same manifest name would make every name lookup in the run
+  // (planner, block severity, journal) pick an arbitrary one, so reject it at load time.
+  const seen = new Set<string>();
+  for (const p of peons) {
+    if (seen.has(p.name)) throw new EngineError("CONFIG_INVALID", `peon "${p.name}" is configured more than once`);
+    seen.add(p.name);
+  }
   return {
     root, provider: cfg.provider, models: { ...DEFAULT_MODELS, ...cfg.model },
     budget: { tokensPerPeon: cfg.budget.tokens_per_peon }, journal: cfg.journal, peons,

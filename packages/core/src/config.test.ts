@@ -69,3 +69,10 @@ test("disabled peon requires a reason", async () => {
 test("missing peons.yaml is an EngineError", async () => {
   await expect(loadConfig(mkdtempSync(join(tmpdir(), "empty-")))).rejects.toThrow(/peons init/);
 });
+test("two entries resolving to the same peon name are an EngineError", async () => {
+  const root = repo(`peons:\n  - use: ./peons/local-peon\n  - use: ./peons/copy\n`);
+  mkdirSync(join(root, "peons/copy"), { recursive: true });
+  writeFileSync(join(root, "peons/copy/peon.md"), PEON.replace("name: a11y", "name: local-peon"));
+  await expect(loadConfig(root)).rejects.toBeInstanceOf(EngineError);
+  await expect(loadConfig(root)).rejects.toThrow('peon "local-peon" is configured more than once');
+});
