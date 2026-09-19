@@ -20,7 +20,6 @@ export async function runCommand(names: string[], files: string[], o: RunOpts, c
   const scope = parseScope(o.scope, o.base, files);
   const opts = { root: ctx.cwd, scope, names: names.length ? names : undefined, allFiles: o.allFiles, failOn, noCache: o.cache === false, surface: process.env.CI ? "ci" as const : "cli" as const, provider: deps.provider, config };
   if (deps.tty) {
-    // @ts-expect-error created in Task 20
     const { renderRun } = await import("../ui/RunView.tsx");
     return renderRun(opts);
   }

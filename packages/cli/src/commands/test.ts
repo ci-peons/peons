@@ -4,7 +4,6 @@ export type TestOpts = { runs?: string; minPrecision?: string; minRecall?: strin
 export async function testCommand(names: string[], o: TestOpts, ctx: Ctx, deps: { provider?: Provider; tty: boolean }): Promise<number> {
   const opts = { root: ctx.cwd, names: names.length ? names : undefined, runs: o.runs ? Number(o.runs) : undefined, minPrecision: o.minPrecision ? Number(o.minPrecision) : undefined, minRecall: o.minRecall ? Number(o.minRecall) : undefined, provider: deps.provider };
   if (deps.tty) {
-    // @ts-expect-error created in Task 20
     const { renderTest } = await import("../ui/TestView.tsx");
     return renderTest(opts);
   }
