@@ -1,0 +1,35 @@
+name: ci
+on: { push: { branches: [main] }, pull_request: {} }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run build
+  peons-fixtures:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun packages/cli/src/index.ts test --runs 2 --format json > peons-test.json
+        env: { PEONS_API_KEY: "${{ secrets.PEONS_API_KEY }}" }
+      - uses: actions/upload-artifact@v4
+        with: { name: peons-test, path: peons-test.json }
+  dogfood:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions: { contents: read, pull-requests: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile && cd packages/action && bun run build
+      - uses: ./packages/action
+        with: { api-key: "${{ secrets.PEONS_API_KEY }}", soft-fail: "true" }

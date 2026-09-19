@@ -6,7 +6,8 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json",
-    "peons": "bun packages/cli/src/index.ts"
+    "peons": "bun packages/cli/src/index.ts",
+    "build": "bun run --filter './packages/*' build"
   },
   "devDependencies": {
     "@types/bun": "^1.1.0",
