@@ -50,6 +50,7 @@
         "react": "^18.3.1",
       },
       "devDependencies": {
+        "@peons/boss": "workspace:*",
         "@peons/core": "workspace:*",
         "@peons/schema": "workspace:*",
         "@types/react": "^18.3.0",

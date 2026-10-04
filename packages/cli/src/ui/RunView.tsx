@@ -4,6 +4,7 @@ import Spinner from "ink-spinner";
 import { run, type RunOptions, type RunEvent } from "@peons/core";
 import type { RunResult, Finding } from "@peons/schema";
 import { INK_COLOR } from "./colors.ts";
+import { formatBossFooter } from "../commands/plan.ts";
 
 export type Row = { name: string; version: string; files: number; status: "running" | "ok" | "cached" | "error"; startedAt: number; durationMs?: number; findings: number; tokens?: number; error?: string };
 
@@ -34,6 +35,7 @@ export function RunView({ rows, result }: { rows: Row[]; result: RunResult | nul
           {r.error ? <Text color="red"> {r.error}</Text> : null}
         </Text>
       ))}
+      {result?.plan.boss ? <Text dimColor>{formatBossFooter(result.plan.boss).trim()}</Text> : null}
       {result ? (
         <Box flexDirection="column" marginTop={1}>
           <Static items={result.findings}>{(f) => <FindingBlock key={f.fingerprint} f={f} />}</Static>

@@ -18,6 +18,7 @@ git add -A && peons run --scope staged --format agent
 ```
 Only some peons: `peons run a11y react --scope staged --format agent`.
 See what would run without calling a model: `peons plan --scope staged`.
+When the repository has the Boss enabled or you pass --auto, add --intent "one line on what you changed" so routing can use it: peons run --auto --intent "Add idempotency key to booking creation" --scope staged --format agent.
 
 ## Reading the output
 Each finding block is `[SEVERITY] file:line · peon/check`, the message, the offending lines, and a `Fix:` suggestion when present.
