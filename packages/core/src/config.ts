@@ -3,7 +3,7 @@ import { join, resolve, isAbsolute } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import {
-  parsePeonFile, PeonParseError, SeveritySchema, ModelTierSchema,
+  parsePeonFile, PeonParseError, SeveritySchema, ModelTierSchema, isContainedGlob,
   type PeonManifest, type PeonCheck, type ModelTier, type Severity,
 } from "@peons/schema";
 import { EngineError } from "./errors.ts";
@@ -25,6 +25,22 @@ const ConfigFileSchema = z.object({
     enabled: z.boolean().default(true),
     reason: z.string().optional(),
   })).default([]),
+  boss: z.object({
+    enabled: z.boolean().default(false),
+    provider: z.enum(["auto", "jev", "llm"]).default("auto"),
+    model: z.string().min(1).default("jev-latest"),
+    budget: z.object({ max_peons: z.number().int().positive().default(5) }).default({ max_peons: 5 }),
+    always: z.array(z.string()).default([]),
+    never_skip: z.array(z.string().refine(isContainedGlob, { message: 'globs must be relative to the repository and must not contain ".."' })).default([]),
+    thresholds: z.object({
+      dispatch: z.number().gt(0.5).max(1).default(0.7),
+      prune: z.number().min(0).lt(0.5).default(0.15),
+    }).default({ dispatch: 0.7, prune: 0.15 }),
+  }).default({
+    enabled: false, provider: "auto", model: "jev-latest",
+    budget: { max_peons: 5 }, always: [], never_skip: [],
+    thresholds: { dispatch: 0.7, prune: 0.15 },
+  }),
 });
 const LockSchema = z.object({
   lockfile: z.literal(1),
@@ -40,9 +56,19 @@ export type ResolvedPeon = {
   manifest: PeonManifest; guidance: string; checks: PeonCheck[]; body: string;
   paths: string[]; block: Severity; enabled: boolean; reason?: string;
 };
+export type BossConfig = {
+  enabled: boolean; provider: "auto" | "jev" | "llm"; model: string;
+  budget: { maxPeons: number }; always: string[]; neverSkip: string[];
+  thresholds: { dispatch: number; prune: number };
+};
+export const DEFAULT_BOSS: BossConfig = {
+  enabled: false, provider: "auto", model: "jev-latest",
+  budget: { maxPeons: 5 }, always: [], neverSkip: [],
+  thresholds: { dispatch: 0.7, prune: 0.15 },
+};
 export type ResolvedConfig = {
   root: string; provider: "anthropic"; models: Record<ModelTier, string>;
-  budget: { tokensPerPeon: number }; journal: boolean; peons: ResolvedPeon[];
+  budget: { tokensPerPeon: number }; journal: boolean; peons: ResolvedPeon[]; boss: BossConfig;
 };
 
 async function readYaml<T>(path: string, schema: z.ZodType<T>, what: string): Promise<T | null> {
@@ -104,8 +130,10 @@ export async function loadConfig(root: string): Promise<ResolvedConfig> {
     if (seen.has(p.name)) throw new EngineError("CONFIG_INVALID", `peon "${p.name}" is configured more than once`);
     seen.add(p.name);
   }
+  for (const a of cfg.boss.always) if (!peons.some((p) => p.name === a)) throw new EngineError("CONFIG_INVALID", `boss.always names "${a}", which is not a configured peon`);
+  const boss: BossConfig = { enabled: cfg.boss.enabled, provider: cfg.boss.provider, model: cfg.boss.model, budget: { maxPeons: cfg.boss.budget.max_peons }, always: cfg.boss.always, neverSkip: cfg.boss.never_skip, thresholds: cfg.boss.thresholds };
   return {
     root, provider: cfg.provider, models: { ...DEFAULT_MODELS, ...cfg.model },
-    budget: { tokensPerPeon: cfg.budget.tokens_per_peon }, journal: cfg.journal, peons,
+    budget: { tokensPerPeon: cfg.budget.tokens_per_peon }, journal: cfg.journal, peons, boss,
   };
 }

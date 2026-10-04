@@ -5,6 +5,9 @@ import { join } from "node:path";
 import { run } from "./run.ts";
 import { FakeProvider } from "./provider/fake.ts";
 import { EngineError } from "./errors.ts";
+import { PathPlanner } from "./planner.ts";
+import type { ResolvedConfig } from "./config.ts";
+import type { ChangeSet } from "./changeset.ts";
 
 const PEON = (name: string, block = "high") => `---
 name: ${name}
@@ -94,6 +97,14 @@ test("a missing API key fails before anything is journalled", async () => {
   }
 });
 
+test("journal plan event carries plan.boss when the planner sets it", async () => {
+  const root = repo();
+  const planner = { plan: async (cfg: ResolvedConfig, changes: ChangeSet) => {
+    const p = await new PathPlanner().plan(cfg, changes); p.boss = { provider: "none", probabilities: {}, decisionSkipped: "test" }; return p; } };
+  await run({ root, scope: { kind: "files", paths: ["src/a.tsx"] }, surface: "cli", provider: new FakeProvider(flag), planner });
+  const line = readFileSync(join(root, ".peons/journal", readdirSync(join(root, ".peons/journal"))[0]!), "utf8").split("\n")[0]!;
+  expect(JSON.parse(line).boss.decisionSkipped).toBe("test");
+});
 test("a permission violation still closes the journal with a run_complete", async () => {
   const root = mkdtempSync(join(tmpdir(), "run-"));
   mkdirSync(join(root, "peons/a11y"), { recursive: true }); writeFileSync(join(root, "peons/a11y/peon.md"), PEON_NO_READ);

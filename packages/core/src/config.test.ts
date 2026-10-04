@@ -76,3 +76,16 @@ test("two entries resolving to the same peon name are an EngineError", async () 
   await expect(loadConfig(root)).rejects.toBeInstanceOf(EngineError);
   await expect(loadConfig(root)).rejects.toThrow('peon "local-peon" is configured more than once');
 });
+test("boss block defaults and overrides", async () => {
+  const root = repo(`peons:\n  - use: ./peons/local-peon\n`);
+  expect((await loadConfig(root)).boss).toEqual({ enabled: false, provider: "auto", model: "jev-latest", budget: { maxPeons: 5 }, always: [], neverSkip: [], thresholds: { dispatch: 0.7, prune: 0.15 } });
+  const root2 = repo(`boss:\n  enabled: true\n  provider: llm\n  budget: { max_peons: 2 }\n  always: [local-peon]\n  never_skip: ["apps/billing/**"]\n  thresholds: { dispatch: 0.8, prune: 0.1 }\npeons:\n  - use: ./peons/local-peon\n`);
+  const b = (await loadConfig(root2)).boss;
+  expect(b.enabled).toBe(true); expect(b.provider).toBe("llm"); expect(b.budget.maxPeons).toBe(2);
+  expect(b.always).toEqual(["local-peon"]); expect(b.neverSkip).toEqual(["apps/billing/**"]); expect(b.thresholds).toEqual({ dispatch: 0.8, prune: 0.1 });
+});
+test("boss.always must name a configured peon; thresholds are range-checked", async () => {
+  await expect(loadConfig(repo(`boss:\n  always: [ghost]\npeons:\n  - use: ./peons/local-peon\n`))).rejects.toThrow(/always.*ghost/);
+  await expect(loadConfig(repo(`boss:\n  thresholds: { dispatch: 0.4 }\npeons:\n  - use: ./peons/local-peon\n`))).rejects.toBeInstanceOf(EngineError);
+  await expect(loadConfig(repo(`boss:\n  never_skip: ["../**"]\npeons:\n  - use: ./peons/local-peon\n`))).rejects.toBeInstanceOf(EngineError);
+});

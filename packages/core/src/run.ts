@@ -60,7 +60,7 @@ export async function run(opts: RunOptions): Promise<RunResult> {
   // missing key cannot leave an orphan "plan" line behind with no matching run_complete.
   const provider = plan.entries.length ? (opts.provider ?? (await defaultProvider())) : (opts.provider ?? null);
   const journal = new Journal(join(opts.root, ".peons", "journal"), cfg.journal);
-  await journal.append({ type: "plan", at: new Date().toISOString(), run: runRef, peons: plan.entries.map((e) => ({ name: e.peon, version: cfg.peons.find((p) => p.name === e.peon)!.version, files: e.files.map((f) => f.path), reasons: e.files.map((f) => f.reason) })) });
+  await journal.append({ type: "plan", at: new Date().toISOString(), run: runRef, peons: plan.entries.map((e) => ({ name: e.peon, version: cfg.peons.find((p) => p.name === e.peon)!.version, files: e.files.map((f) => f.path), reasons: e.files.map((f) => f.reason) })), boss: plan.boss });
   try {
     return await finish();
   } catch (e) {
