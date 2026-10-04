@@ -43,6 +43,43 @@ peons run --scope staged   # run configured peons against the staged change set
 peons test                 # run each peon's fixtures and report recall/precision
 ```
 
+## Boss (unreleased, needs an API key)
+
+By default every configured peon runs on every file within its configured paths. The Boss is an
+optional routing layer that looks at the changed files, trigger patterns, and (optionally) your
+commit/PR intent, and decides which configured peons actually need to run on top of that — useful
+once you have more peons registered than any single change calls for.
+
+Turn it on for one run with `--auto` (`peons plan --auto --intent "..."`, `peons run --auto`), with
+`auto: true` on the MCP `plan`/`run_peons` tools, or with the Action's `auto` input; or make it the
+default for every run by adding a `boss:` block to `peons.yaml`:
+
+```yaml
+boss:
+  enabled: true
+  budget: { max_peons: 5 }
+  always: [security]      # peons that always run when configured, decision or no decision
+  never_skip: ["db/**"]   # paths the Boss is never allowed to prune a deterministically planned peon off
+```
+
+The Boss calls a routing model ("Jev") to score which peons are relevant to the files, triggers and
+intent it can't already decide from paths alone; set `TYPESAFE_API_KEY` to use it. Without that key
+it falls back to asking your normal review model the same questions, using whichever of
+`PEONS_API_KEY`/`ANTHROPIC_API_KEY` you already have set. With neither key configured, or when the
+plan is already settled by paths and triggers, the Boss skips the decision step and the run is
+unaffected other than a `boss` block in the plan noting why.
+
+Routing fixtures for `.peons/boss-fixtures/` (one YAML file per scenario, with the changed files and
+which peons should and should not be dispatched) let you score the Boss's own accuracy:
+
+```bash
+peons boss-test
+```
+
+This calls the real routing model (or review model, as a fallback), so it is a live check against
+an external API, not a unit test — run it manually, not on every push. The `peons-fixtures` CI job
+runs it on manual dispatch (`workflow_dispatch`) given `TYPESAFE_API_KEY`/`PEONS_API_KEY` secrets.
+
 ## GitHub Action (unreleased)
 
 `ci-peons/action@v1` is not tagged yet. Once it is:
@@ -54,7 +91,7 @@ peons test                 # run each peon's fixtures and report recall/precisio
   with: { api-key: ${{ secrets.PEONS_API_KEY }} }
 ```
 
-`fetch-depth: 0` is required so the action can resolve the default-branch scope. The action accepts `scope: branch` (the default) or `scope: staged`.
+`fetch-depth: 0` is required so the action can resolve the default-branch scope. The action accepts `scope: branch` (the default) or `scope: staged`. Add `auto: "true"` to let the Boss choose peons from the change set, triggers and the PR title/body — see [Boss](#boss-unreleased-needs-an-api-key).
 
 ## Claude Code (available today)
 

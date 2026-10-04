@@ -52,9 +52,18 @@ jobs:
         run: |
           case "$NAMES" in *[!A-Za-z0-9_\ -]*) echo "invalid peon name"; exit 1;; esac
           bun packages/cli/src/index.ts test $NAMES --runs 2 --format json > peons-test.json
+      - name: Score the Boss's routing against .peons/boss-fixtures
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          PEONS_API_KEY: ${{ secrets.PEONS_API_KEY }}
+        run: bun packages/cli/src/index.ts boss-test --format json > boss-test.json
       - uses: actions/upload-artifact@v4
         if: steps.changed.outputs.skip != 'true'
-        with: { name: peons-test, path: peons-test.json }
+        with:
+          name: peons-test
+          path: |
+            peons-test.json
+            boss-test.json
   dogfood:
     # Manual only for the same reason as peons-fixtures.
     if: ${{ github.event_name == 'workflow_dispatch' }}

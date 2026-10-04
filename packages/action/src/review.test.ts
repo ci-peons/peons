@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { diffLinesFromPatch, existingFingerprints } from "./review.ts";
+import { diffLinesFromPatch, existingFingerprints, prIntent } from "./review.ts";
 
 test("collects right-side line numbers from PR patches", () => {
   const m = diffLinesFromPatch([{ filename: "a.tsx", patch: "@@ -1,2 +1,3 @@\n one\n+two\n three" }, { filename: "bin.png" }]);
@@ -16,4 +16,9 @@ test("extracts fingerprints from review comments and review bodies together", ()
   const comment = { body: `nit <!-- peons:fp:${commentFp} -->` };
   const review = { body: `Outside the diff:\n- foo <!-- peons:fp:${reviewFp} -->` };
   expect(existingFingerprints([comment, review])).toEqual(new Set([commentFp, reviewFp]));
+});
+test("prIntent joins title and body, undefined when empty", () => {
+  expect(prIntent({ title: "Fix", body: "Details" })).toBe("Fix\n\nDetails");
+  expect(prIntent({ title: "Fix", body: null })).toBe("Fix");
+  expect(prIntent(undefined)).toBeUndefined();
 });
