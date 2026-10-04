@@ -58,9 +58,14 @@ default for every run by adding a `boss:` block to `peons.yaml`:
 boss:
   enabled: true
   budget: { max_peons: 5 }
-  always: [security]      # peons that always run when configured, decision or no decision
+  always: [a11y]          # peons that always run when configured, decision or no decision
   never_skip: ["db/**"]   # paths the Boss is never allowed to prune a deterministically planned peon off
+  thresholds: { dispatch: 0.7, prune: 0.15 }   # dispatch an unplanned peon at/above 0.7, prune a planned one at/below 0.15
 ```
+
+`always` and `never_skip` names must be configured peons; an unknown name is a config error.
+The Action's `auto` input follows `boss.enabled` when left unset; `auto: "true"` or `auto: "false"`
+overrides it, and any other value fails the step.
 
 The Boss calls a routing model ("Jev") to score which peons are relevant to the files, triggers and
 intent it can't already decide from paths alone; set `TYPESAFE_API_KEY` to use it. Without that key
