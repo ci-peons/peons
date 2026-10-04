@@ -1,0 +1,4 @@
+intent: "Rebuild the signup form with the new Button component"
+files:
+  - { path: "apps/web/components/SignupForm.tsx", status: added, added: 80 }
+expect: [a11y, react]

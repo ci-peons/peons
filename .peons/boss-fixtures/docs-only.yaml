@@ -1,0 +1,6 @@
+intent: "Document the release process"
+files:
+  - { path: "docs/release.md", status: added, added: 40 }
+  - { path: "README.md", status: modified, added: 4, removed: 1 }
+expect: []
+reject: [a11y, react]

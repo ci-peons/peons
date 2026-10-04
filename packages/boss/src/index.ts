@@ -7,3 +7,4 @@ export * from "./state.ts";
 export * from "./triggers.ts";
 export * from "./intent.ts";
 export * from "./planner.ts";
+export * from "./fixtures.ts";

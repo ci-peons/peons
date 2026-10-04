@@ -3,6 +3,7 @@ name: react
 version: 1.0.0
 description: React correctness and best practices for function components and hooks
 paths: ["**/*.{tsx,jsx}"]
+triggers: ["innerHTML"]
 severity:
   default: medium
   block: high

@@ -1,0 +1,5 @@
+intent: "Add alt text to the hero image"
+files:
+  - { path: "apps/web/components/Hero.tsx", status: modified, added: 3, removed: 1 }
+expect: [a11y]
+reject: [react]

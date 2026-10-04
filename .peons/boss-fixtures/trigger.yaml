@@ -1,0 +1,4 @@
+intent: "Render markdown preview"
+files:
+  - { path: "apps/web/lib/markdown.ts", status: added, added: 15, added_lines: ["container.innerHTML = rendered"] }
+expect: [react]
