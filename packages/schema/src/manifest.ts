@@ -15,11 +15,16 @@ const CONTAINED_MESSAGE = 'globs must be relative to the repository and must not
 const GlobString = z.string().min(1).refine(isContainedGlob, { message: CONTAINED_MESSAGE });
 const Globs = z.array(GlobString).min(1);
 
+// A quantified group whose own body ends in a quantifier -- (a+)+, (\w*)*, (a{2,})+ -- is the
+// classic catastrophic-backtracking shape: matching it against a long non-matching line can take
+// exponential time, and triggers run on every added line of every changed file.
+const NESTED_QUANTIFIER = /\([^()]*[+*}][^()]*\)\s*[+*{?]/;
 export function isValidTrigger(p: string): boolean {
   if (p.length === 0 || p.length > 200) return false;
+  if (NESTED_QUANTIFIER.test(p)) return false;
   try { new RegExp(p); return true; } catch { return false; }
 }
-const Trigger = z.string().refine(isValidTrigger, { message: "trigger must be a valid regular expression of at most 200 characters" });
+const Trigger = z.string().refine(isValidTrigger, { message: "trigger must be a valid regular expression of at most 200 characters without nested quantifiers" });
 
 export const PeonManifestSchema = z.object({
   name: z.string().refine((n) => validatePeonName(n).ok, { message: "invalid peon name" }),

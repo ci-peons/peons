@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { PeonManifestSchema } from "./manifest.ts";
+import { PeonManifestSchema, isValidTrigger } from "./manifest.ts";
 
 const base = {
   name: "a11y", version: "1.0.0", description: "d", paths: ["**/*.tsx"],
@@ -43,4 +43,17 @@ test("triggers default empty, validate as regexes, cap count and length", () => 
   expect(PeonManifestSchema.safeParse({ ...base, triggers: ["(unclosed"] }).success).toBe(false);
   expect(PeonManifestSchema.safeParse({ ...base, triggers: Array(33).fill("a") }).success).toBe(false);
   expect(PeonManifestSchema.safeParse({ ...base, triggers: ["a".repeat(201)] }).success).toBe(false);
+});
+
+test("triggers reject nested quantifiers but allow the patterns real peons use", () => {
+  for (const bad of ["(a+)+$", "(\\w*)*", "(a{2,})+"]) {
+    expect(isValidTrigger(bad)).toBe(false);
+    const r = PeonManifestSchema.safeParse({ ...base, triggers: [bad] });
+    expect(r.success).toBe(false);
+    expect(r.error!.issues[0]!.message).toBe("trigger must be a valid regular expression of at most 200 characters without nested quantifiers");
+  }
+  for (const ok of ["\\buse(Effect|State)\\(", "innerHTML", "process\\.env\\.\\w+"]) {
+    expect(isValidTrigger(ok)).toBe(true);
+    expect(PeonManifestSchema.safeParse({ ...base, triggers: [ok] }).success).toBe(true);
+  }
 });
