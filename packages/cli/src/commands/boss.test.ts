@@ -44,3 +44,9 @@ test("boss-test scores fixtures and exits 1 below thresholds", async () => {
   expect(c.out()).toContain("one"); expect(c.out()).toMatch(/precision 0\.50/);
   const c2 = capture(); expect(await runCli(["boss-test", "--min-precision", "0.5"], { cwd, ...c2 }, { decision })).toBe(0);
 });
+test("boss-test validates --provider and numeric options", async () => {
+  const cwd = repo();
+  const c1 = capture(); expect(await runCli(["boss-test", "--provider", "foo"], { cwd, ...c1 }, { decision })).toBe(2); expect(c1.err()).toContain('unknown provider "foo"');
+  const c2 = capture(); expect(await runCli(["boss-test", "--runs", "abc"], { cwd, ...c2 }, { decision })).toBe(2); expect(c2.err()).toContain("--runs must be a number");
+  const c3 = capture(); expect(await runCli(["boss-test", "--provider", "llm", "--min-precision", "0.5"], { cwd, ...c3 }, { decision })).toBe(0);
+});
