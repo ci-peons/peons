@@ -1,5 +1,5 @@
 intent: "Fix stale closure in the polling hook"
 files:
-  - { path: "apps/web/hooks/usePolling.ts", status: modified, added: 12, removed: 6 }
+  - { path: "apps/web/hooks/usePolling.ts", status: modified, added: 12, removed: 6, added_lines: ["useEffect(() => {"] }
 expect: [react]
 reject: [a11y]
