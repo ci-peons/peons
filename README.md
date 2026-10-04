@@ -63,7 +63,7 @@ boss:
   thresholds: { dispatch: 0.7, prune: 0.15 }   # dispatch an unplanned peon at/above 0.7, prune a planned one at/below 0.15
 ```
 
-`always` and `never_skip` names must be configured peons; an unknown name is a config error.
+`always` names must be configured peons; an unknown name is a config error. `never_skip` holds path globs, not peon names.
 The Action's `auto` input follows `boss.enabled` when left unset; `auto: "true"` or `auto: "false"`
 overrides it, and any other value fails the step.
 

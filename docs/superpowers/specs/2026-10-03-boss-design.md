@@ -120,7 +120,7 @@ Sent in one call:
    - Unplanned peon with `peon:<name>` probability `p >= dispatch`: added with all changed files, reason `intent p=<p>`.
    - Planned peon with `p <= prune`: removed with reason `pruned p=<p>`, unless protected (step 4).
    - Otherwise no change; the probability is still recorded for the budget step and the plan output.
-4. **Hard rules.** Every `always` peon is present (added with all changed files, reason `always`). A peon is protected if it is in `always`, or if it was planned by paths or triggers (steps 1 and 2) and any of those planned files matches a `never_skip` glob. A peon dispatched by the decision step is protected only by `always`, because it is planned with every changed file and would otherwise be protected by any `never_skip` file in the change, letting the model bypass the budget. Protected peons are never pruned in step 3 and never cut in step 5.
+4. **Hard rules.** Every `always` peon is present (added with all changed files, reason `always`) when the change set is non-empty; a plan never contains a peon with no files. A peon is protected if it is in `always`, or if it was planned by paths or triggers (steps 1 and 2) and any of those planned files matches a `never_skip` glob. A peon dispatched by the decision step is protected only by `always`, because it is planned with every changed file and would otherwise be protected by any `never_skip` file in the change, letting the model bypass the budget. Protected peons are never pruned in step 3 and never cut in step 5.
 5. **Budget.** If the plan holds more than `max_peons` peons: keep protected peons; rank the rest by probability descending, with peons that have no probability (decision skipped) ranked after those that do, ties broken by name; cut the remainder with reason `over budget (max <n>), p=<p>`.
 
 Provider failure: if the decision provider throws after its own retries, step 3 is skipped with reason `decision unavailable: <message>` and steps 4 and 5 still run. An empty change set skips step 3 as settled. When step 5 cuts a peon that has no probability (the decision step did not run), the reason is `over budget (max <n>)` without a probability clause. The Boss never causes exit 2.
@@ -149,9 +149,9 @@ interface DecisionProvider {
 
 ## 8. Surfaces
 
-- **CLI**: `peons plan --auto [--intent <text>]` and `peons run --auto [--intent <text>]`. `boss.enabled: true` implies `--auto`; `--no-auto` disables it for one run. Plain `plan` output lists per peon: planned or skipped, files, reason, probability when present, and a footer `Boss: provider=jev model=jev-1.13.0 risk=1.3 decision=made|skipped (<reason>)`. The Ink run view shows the same footer line under the peon rows. The `agent` format is unchanged.
+- **CLI**: `peons plan --auto [--intent <text>]` and `peons run --auto [--intent <text>]`. `boss.enabled: true` implies `--auto`; `--no-auto` disables it for one run. Plain `plan` output lists per peon: planned or skipped, files, reason, probability when present, and a footer `Boss: provider=jev model=jev-1.13.0 risk=1.30 decision=made|skipped (<reason>)`. The Ink run view shows the same footer line under the peon rows. The `agent` format is unchanged.
 - **MCP**: `plan` and `run_peons` gain `auto?: boolean` and `intent?: string`.
-- **Action**: input `auto` (default `false`); intent is `<PR title>\n\n<PR body>`.
+- **Action**: input `auto`, tri-state: unset follows `boss.enabled` in `peons.yaml`, `"true"` or `"false"` override; intent is `<PR title>\n\n<PR body>`, routed through the same redaction and truncation as the CLI.
 - **Skill template**: add one sentence: pass `--intent` with a one-line description of what you changed.
 - **Journal**: the existing `plan` event's `reasons` already carry the reason strings; add `boss` (the `Plan.boss` object) to the event payload.
 
