@@ -130,3 +130,11 @@ test("names option excludes a peon even if it's in always", async () => {
   const plan = await new BossPlanner({ provider: null }).plan(cfg([P("a", ["**"]), P("b", ["**"])], { always: ["a"] }), changes(cf("z.ts")), { names: ["b"] });
   expect(plan.entries.map((e) => e.peon)).toEqual(["b"]);
 });
+
+test("an always peon is not planned with no files when the change set is empty", async () => {
+  const fake = new FakeDecisionProvider(nouls({ z: 0.9 }));
+  const plan = await new BossPlanner({ provider: fake }).plan(cfg([P("z", ["**"])], { always: ["z"] }), changes());
+  expect(fake.calls).toHaveLength(0);
+  expect(plan.entries).toEqual([]);
+  expect(plan.skipped).toContainEqual({ peon: "z", reason: "no changed file matched **" });
+});

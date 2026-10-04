@@ -50,3 +50,13 @@ test("boss-test validates --provider and numeric options", async () => {
   const c2 = capture(); expect(await runCli(["boss-test", "--runs", "abc"], { cwd, ...c2 }, { decision })).toBe(2); expect(c2.err()).toContain("--runs must be a number");
   const c3 = capture(); expect(await runCli(["boss-test", "--provider", "llm", "--min-precision", "0.5"], { cwd, ...c3 }, { decision })).toBe(0);
 });
+
+test("run --auto with boss.always and an empty change set never reaches the provider", async () => {
+  // No deps.provider is injected and deps.decision is null, so a plan that reached either one
+  // would construct the real Anthropic provider and fail on the missing key.
+  const cwd = repo("boss:\n  enabled: true\n  always: [a11y]\n"); const c = capture();
+  expect(await runCli(["run", "--auto", "--scope", "files", "--format", "json"], { cwd, ...c }, { decision: null, tty: false })).toBe(0);
+  const r = JSON.parse(c.out());
+  expect(r.peons).toEqual([]);
+  expect(r.plan.entries).toEqual([]);
+});

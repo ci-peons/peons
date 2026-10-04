@@ -71,6 +71,10 @@ export class BossPlanner implements Planner {
       const keep = Math.max(0, boss.budget.maxPeons - protectedSet.size);
       for (const name of cuttable.slice(keep)) { entries.delete(name); const p = info.probabilities[name]; skipped.push({ peon: name, reason: `over budget (max ${boss.budget.maxPeons})${p !== undefined ? `, p=${fmtP(p)}` : ""}` }); }
     }
+    // A peon with no files has nothing to review: `always` on an empty change set plans one, and
+    // so would any future rule that registers an entry before files are attached. Drop them before
+    // the skipped list is filled so they are reported as skipped, never dispatched empty.
+    for (const [name, e] of entries) if (e.files.length === 0) entries.delete(name);
     for (const p of candidates) if (!entries.has(p.name) && !skipped.some((s) => s.peon === p.name)) skipped.push({ peon: p.name, reason: info.probabilities[p.name] !== undefined ? `not dispatched p=${fmtP(info.probabilities[p.name]!)}` : `no changed file matched ${p.paths.join(", ")}` });
     return { entries: [...entries.values()], skipped, boss: info };
   }
