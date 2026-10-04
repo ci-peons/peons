@@ -16,3 +16,18 @@ test("forces report_answers tool, maps answers, computes confidence", async () =
   const risk = res.answers.risk!; expect(risk.type).toBe("score"); if (risk.type === "score") { expect(risk.confidence).toBeCloseTo(entropyConfidence({ "1": 0.8, "2": 0.2 }), 5); }
   expect(res.usage.inputTokens).toBe(50);
 });
+
+// Live: the only check that the forced-tool schema this provider sends is one the real API
+// accepts. Skipped without a key, so CI and clones without one are unaffected.
+test.skipIf(!process.env.PEONS_API_KEY && !process.env.ANTHROPIC_API_KEY)("live smoke: forced tool schema accepted", async () => {
+  const p = new LlmDecisionProvider({ model: "claude-haiku-4-5-20251001" });
+  const res = await p.decide(
+    { files: [{ path: "apps/web/components/Hero.tsx", status: "modified", added: 3, removed: 1 }], intent: "Add alt text to the hero image" },
+    {
+      "peon:a11y": { type: "noul", instructions: "Does this change need an accessibility review?", criteria: { true: "it touches markup or ARIA", false: "it does not" } },
+      risk: { type: "score", instructions: "How risky is this change?", criteria: ["low", "high"] },
+    },
+  );
+  expect(res.answers["peon:a11y"]!.type).toBe("noul");
+  expect(res.answers.risk!.type).toBe("score");
+}, 30_000);
