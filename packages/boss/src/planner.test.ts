@@ -54,6 +54,8 @@ test("provider failure degrades to a deterministic plan", async () => {
   const plan = await new BossPlanner({ provider: fake }).plan(cfg([P("a11y", ["**/*.tsx"]), P("sql", ["db/**"])]), changes(cf("a.tsx")));
   expect(plan.entries.map((e) => e.peon)).toEqual(["a11y"]);
   expect(plan.boss).toMatchObject({ provider: "none", decisionSkipped: "decision unavailable: boom" });
+  expect(plan.boss!.model).toBeUndefined();
+  expect(plan.boss!.risk).toBeUndefined();
 });
 test("oversized state skips the decision", async () => {
   const fake = new FakeDecisionProvider(nouls({ a11y: 0.9, sql: 0.9 }));
@@ -65,4 +67,66 @@ test("names option restricts candidates like PathPlanner", async () => {
   const fake = new FakeDecisionProvider(nouls({ a11y: 0.9, sql: 0.9 }));
   const plan = await new BossPlanner({ provider: fake }).plan(cfg([P("a11y", ["**/*.tsx"]), P("sql", ["db/**"])]), changes(cf("a.tsx")), { names: ["sql"] });
   expect(plan.entries.map((e) => e.peon)).toEqual(["sql"]);
+});
+
+test("never_skip protects only path- or trigger-planned peons, not intent-dispatched ones", async () => {
+  const peons = (mPaths: string[]) => [P("m", mPaths), P("n", ["db/**"]), P("o", ["other/**"])];
+
+  // Case A: m is path-planned on src/b.ts, which does not match never_skip. n and o are
+  // intent-dispatched with every changed file (including billing/a.ts) but are no longer
+  // protected by that under the new rule, so nothing is protected and budget 1 keeps the
+  // highest probability (n).
+  const fakeA = new FakeDecisionProvider(nouls({ m: 0.9, n: 0.95, o: 0.9 }));
+  const planA = await new BossPlanner({ provider: fakeA }).plan(
+    cfg(peons(["src/**"]), { budget: { maxPeons: 1 }, neverSkip: ["billing/**"] }),
+    changes(cf("billing/a.ts"), cf("src/b.ts")),
+  );
+  expect(planA.entries.map((e) => e.peon)).toEqual(["n"]);
+  expect(planA.skipped).toContainEqual({ peon: "m", reason: "over budget (max 1), p=0.90" });
+  expect(planA.skipped).toContainEqual({ peon: "o", reason: "over budget (max 1), p=0.90" });
+
+  // Case B: m's paths now match billing/a.ts directly, so m is path-planned there and IS
+  // protected by never_skip; n and o remain intent-dispatched and unprotected, so budget 1
+  // keeps m and cuts both.
+  const fakeB = new FakeDecisionProvider(nouls({ m: 0.9, n: 0.95, o: 0.9 }));
+  const planB = await new BossPlanner({ provider: fakeB }).plan(
+    cfg(peons(["billing/**"]), { budget: { maxPeons: 1 }, neverSkip: ["billing/**"] }),
+    changes(cf("billing/a.ts"), cf("src/b.ts")),
+  );
+  expect(planB.entries.map((e) => e.peon)).toEqual(["m"]);
+  expect(planB.skipped).toContainEqual({ peon: "n", reason: "over budget (max 1), p=0.95" });
+  expect(planB.skipped).toContainEqual({ peon: "o", reason: "over budget (max 1), p=0.90" });
+});
+
+test("zero changed files settles the plan without a provider call", async () => {
+  const fake = new FakeDecisionProvider(nouls({ a: 0.9 }));
+  const plan = await new BossPlanner({ provider: fake }).plan(cfg([P("a", ["**"])]), changes());
+  expect(fake.calls).toHaveLength(0);
+  expect(plan.entries).toEqual([]);
+  expect(plan.boss!.decisionSkipped).toBe("decision skipped: plan settled");
+});
+
+test("budget cut with no recorded probability omits p= from the reason", async () => {
+  const plan = await new BossPlanner({ provider: null }).plan(cfg([P("a", ["**"]), P("b", ["**"])], { budget: { maxPeons: 1 } }), changes(cf("x.ts")));
+  expect(plan.entries.map((e) => e.peon)).toEqual(["a"]);
+  expect(plan.skipped).toContainEqual({ peon: "b", reason: "over budget (max 1)" });
+});
+
+test("protected peons alone can exceed the budget; the rest still gets cut", async () => {
+  const peons = [P("p1", ["**"]), P("p2", ["**"]), P("q", ["**"])];
+  const plan = await new BossPlanner({ provider: null }).plan(cfg(peons, { budget: { maxPeons: 1 }, always: ["p1", "p2"] }), changes(cf("x.ts")));
+  expect(plan.entries.map((e) => e.peon).sort()).toEqual(["p1", "p2"]);
+  expect(plan.skipped).toContainEqual({ peon: "q", reason: "over budget (max 1)" });
+});
+
+test("budget tie-break at equal probability favors the earlier name", async () => {
+  const fake = new FakeDecisionProvider(nouls({ x: 0.8, y: 0.8 }));
+  const plan = await new BossPlanner({ provider: fake }).plan(cfg([P("x", ["none/**"]), P("y", ["none/**"])], { budget: { maxPeons: 1 } }), changes(cf("z.ts")));
+  expect(plan.entries.map((e) => e.peon)).toEqual(["x"]);
+  expect(plan.skipped).toContainEqual({ peon: "y", reason: "over budget (max 1), p=0.80" });
+});
+
+test("names option excludes a peon even if it's in always", async () => {
+  const plan = await new BossPlanner({ provider: null }).plan(cfg([P("a", ["**"]), P("b", ["**"])], { always: ["a"] }), changes(cf("z.ts")), { names: ["b"] });
+  expect(plan.entries.map((e) => e.peon)).toEqual(["b"]);
 });
