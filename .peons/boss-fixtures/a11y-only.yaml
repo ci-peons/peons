@@ -1,5 +1,7 @@
+# hero.html is outside the react peon's paths (tsx/jsx only) and carries no hook trigger, so the
+# plan is not settled by paths alone and the decision step has to judge react on intent.
 intent: "Add alt text to the hero image"
 files:
-  - { path: "apps/web/components/Hero.tsx", status: modified, added: 3, removed: 1 }
+  - { path: "apps/web/public/hero.html", status: modified, added: 3, removed: 1 }
 expect: [a11y]
 reject: [react]

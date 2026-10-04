@@ -1,4 +1,6 @@
-intent: "Large refactor of the web app"
+# Twelve files both peons path-match, with max_peons 1, so the budget has to cut one of them.
+boss: { max_peons: 1 }
+intent: "Fix stale dependency arrays in hooks across the web app"
 files:
   - { path: "apps/web/components/Widget01.tsx", status: modified, added: 20, removed: 20 }
   - { path: "apps/web/components/Widget02.tsx", status: modified, added: 20, removed: 20 }
@@ -12,4 +14,5 @@ files:
   - { path: "apps/web/components/Widget10.tsx", status: modified, added: 20, removed: 20 }
   - { path: "apps/web/components/Widget11.tsx", status: modified, added: 20, removed: 20 }
   - { path: "apps/web/components/Widget12.tsx", status: modified, added: 20, removed: 20 }
-expect: [a11y, react]
+expect: [react]
+reject: [a11y]

@@ -11,6 +11,9 @@ export const BossFixtureSchema = z.object({
   files: z.array(z.object({ path: z.string().min(1), status: z.enum(["added", "modified", "renamed"]).default("modified"), added: z.number().int().min(0).default(0), removed: z.number().int().min(0).default(0), added_lines: z.array(z.string()).default([]) })).min(1),
   expect: z.array(z.string()).default([]),
   reject: z.array(z.string()).default([]),
+  // Per-fixture budget override, so one fixture can exercise the budget cut without forcing a
+  // tiny max_peons on every other fixture in the suite.
+  boss: z.object({ max_peons: z.number().int().positive().optional() }).optional(),
 });
 export type BossFixture = z.infer<typeof BossFixtureSchema> & { name: string };
 
@@ -44,9 +47,10 @@ export async function bossTest(opts: { root: string; config?: ResolvedConfig; pr
   const runs = Math.max(1, opts.runs ?? 1);
   const results: BossFixtureResult[] = [];
   for (const f of fixtures) {
+    const fixtureCfg: ResolvedConfig = { ...cfg, boss: { ...cfg.boss, budget: { maxPeons: f.boss?.max_peons ?? cfg.boss.budget.maxPeons } } };
     const counts = new Map<string, number>(); const reasons: Record<string, string> = {};
     for (let i = 0; i < runs; i++) {
-      const plan = await new BossPlanner({ provider: opts.provider, intent: f.intent }).plan(cfg, synthesiseChangeSet(f));
+      const plan = await new BossPlanner({ provider: opts.provider, intent: f.intent }).plan(fixtureCfg, synthesiseChangeSet(f));
       for (const e of plan.entries) { if (cfg.boss.always.includes(e.peon)) continue; counts.set(e.peon, (counts.get(e.peon) ?? 0) + 1); reasons[e.peon] = e.files[0]?.reason ?? ""; }
       for (const s of plan.skipped) reasons[s.peon] ??= s.reason;
     }
@@ -59,6 +63,9 @@ export async function bossTest(opts: { root: string; config?: ResolvedConfig; pr
   const precision = sum("planned") ? sum("hits") / sum("planned") : 1;
   const minP = opts.minPrecision ?? 0.85, minR = opts.minRecall ?? 0.7;
   const failures: string[] = [];
+  // An empty suite would otherwise score a vacuous 1.00/1.00 and PASS, which is exactly the
+  // signal that hides a missing or misnamed .peons/boss-fixtures directory.
+  if (fixtures.length === 0) failures.push("no boss fixtures found in .peons/boss-fixtures");
   if (recall < minR) failures.push(`recall ${recall.toFixed(2)} below ${minR}`);
   if (precision < minP) failures.push(`precision ${precision.toFixed(2)} below ${minP}`);
   return { fixtures: results, precision, recall, passed: failures.length === 0, failures, provider: opts.provider?.kind ?? "none" };
