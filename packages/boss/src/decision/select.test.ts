@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test";
 import { selectDecisionProvider, FallbackProvider } from "./select.ts";
 import { FakeDecisionProvider } from "./fake.ts";
+import type { DecisionProvider } from "./types.ts";
 import type { ResolvedConfig } from "@peons/core";
 const cfg = (provider: "auto" | "jev" | "llm"): ResolvedConfig => ({ models: { fast: "claude-haiku-4-5-20251001" }, boss: { provider, model: "jev-latest" } } as unknown as ResolvedConfig);
 test("auto prefers jev when key present, else llm when anthropic key present, else null", () => {
@@ -25,4 +26,23 @@ test("FallbackProvider falls back to the secondary provider when the primary thr
   const res = await fallback.decide({}, { q: { type: "noul", instructions: "x" } });
   expect(res.answers.q).toEqual({ type: "noul", noul: 0.5 });
   expect(fallback.kind).toBe("fake");
+});
+
+// FakeDecisionProvider reports kind "fake" for both halves, so only ad-hoc providers can show
+// that `kind` actually tracks which of the two answered.
+const down = (kind: DecisionProvider["kind"]): DecisionProvider => ({ kind, decide: async () => { throw new Error("down"); } });
+const up = (kind: DecisionProvider["kind"]): DecisionProvider => ({ kind, decide: async () => ({ answers: {}, model: "m", usage: { inputTokens: 1 } }) });
+
+test("a jev primary that fails switches the reported kind to the llm secondary", async () => {
+  const fallback = new FallbackProvider(down("jev"), up("llm"));
+  expect(fallback.kind).toBe("jev");
+  const res = await fallback.decide({}, {});
+  expect(res.model).toBe("m");
+  expect(fallback.kind).toBe("llm");
+});
+test("a jev primary that succeeds keeps the reported kind at jev", async () => {
+  const fallback = new FallbackProvider(up("jev"), down("llm"));
+  const res = await fallback.decide({}, {});
+  expect(res.model).toBe("m");
+  expect(fallback.kind).toBe("jev");
 });
