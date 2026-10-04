@@ -108,7 +108,7 @@ Sent in one call:
   - criteria: `true`: `The change plausibly touches what this reviewer checks.` / `false`: `The change is unrelated to what this reviewer checks, or touches only files it would not read.`
 - One Score with id `risk`, instructions `How risky is this change if reviewed by nobody?`, criteria in order: `Docs, comments, tests or formatting only`, `Ordinary feature or fix in application code`, `Shared library, build, dependency or configuration change`, `Auth, payments, data deletion, secrets or infrastructure`.
 
-`risk.score` is recorded in the plan and used only as a tie-breaker in the budget step. It never adds or removes a peon.
+`risk.score` is recorded in the plan for the user and the journal. It never adds or removes a peon, and it is not a tie-breaker: it is one value per change, identical for every peon, so it cannot separate two peons.
 
 ## 6. Plan algorithm
 
@@ -121,7 +121,7 @@ Sent in one call:
    - Planned peon with `p <= prune`: removed with reason `pruned p=<p>`, unless protected (step 4).
    - Otherwise no change; the probability is still recorded for the budget step and the plan output.
 4. **Hard rules.** Every `always` peon is present (added with all changed files, reason `always`). A peon is protected if it is in `always`, or if it was planned by paths or triggers (steps 1 and 2) and any of those planned files matches a `never_skip` glob. A peon dispatched by the decision step is protected only by `always`, because it is planned with every changed file and would otherwise be protected by any `never_skip` file in the change, letting the model bypass the budget. Protected peons are never pruned in step 3 and never cut in step 5.
-5. **Budget.** If the plan holds more than `max_peons` peons: keep protected peons; rank the rest by probability descending, with peons that have no probability (decision skipped) ranked after those that do, ties broken by `risk.score` descending then by name; cut the remainder with reason `over budget (max <n>), p=<p>`.
+5. **Budget.** If the plan holds more than `max_peons` peons: keep protected peons; rank the rest by probability descending, with peons that have no probability (decision skipped) ranked after those that do, ties broken by name; cut the remainder with reason `over budget (max <n>), p=<p>`.
 
 Provider failure: if the decision provider throws after its own retries, step 3 is skipped with reason `decision unavailable: <message>` and steps 4 and 5 still run. An empty change set skips step 3 as settled. When step 5 cuts a peon that has no probability (the decision step did not run), the reason is `over budget (max <n>)` without a probability clause. The Boss never causes exit 2.
 
@@ -171,7 +171,9 @@ reject: [react]
 
 `peons boss-test [--provider jev|llm] [--runs N] [--min-precision f] [--min-recall f]` builds a synthetic change set from each fixture (no file contents, hunks synthesised so step 2 can run when a fixture provides `added_lines: [...]`), runs `BossPlanner`, and scores: recall is the fraction of `expect` peons planned; precision is planned peons that are in `expect` over all planned peons not in `always`; `reject` peons that were planned count as false positives. Defaults 0.85 and 0.7, exit 1 below. Output lists each fixture with planned peons and reasons. Running once per provider is how Jev's routing accuracy is compared with the LLM's.
 
-The repo ships six Boss fixtures covering: a11y-only change, react-only change, both, docs-only (expect none), a trigger hit outside paths, and a change that exceeds the budget.
+A fixture may override `boss.max_peons` for its run (`boss: { max_peons: 1 }`), which is how a budget cut is exercised in a repo with few peons.
+
+The repo ships six Boss fixtures covering: an a11y-only change (an `.html` file, so `react` is unplanned and the decision step runs), a react-only change (a `.ts` hook file reached by trigger), both, docs-only (expect none), a trigger hit outside paths, and a change that exceeds the budget (`max_peons: 1` with a react-specific intent, so the model must rank `react` above `a11y`). A fixture that exercises a pure prune is not reachable with two configured peons, because the decision step only runs when some peon is unplanned or the budget is exceeded; it will be added when a third launch peon exists.
 
 ## 10. Testing
 
