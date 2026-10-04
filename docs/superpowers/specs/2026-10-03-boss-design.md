@@ -120,10 +120,10 @@ Sent in one call:
    - Unplanned peon with `peon:<name>` probability `p >= dispatch`: added with all changed files, reason `intent p=<p>`.
    - Planned peon with `p <= prune`: removed with reason `pruned p=<p>`, unless protected (step 4).
    - Otherwise no change; the probability is still recorded for the budget step and the plan output.
-4. **Hard rules.** Every `always` peon is present (added with all changed files, reason `always`). A peon is protected if it is in `always`, or any of its planned files matches a `never_skip` glob. Protected peons are never pruned in step 3 and never cut in step 5.
+4. **Hard rules.** Every `always` peon is present (added with all changed files, reason `always`). A peon is protected if it is in `always`, or if it was planned by paths or triggers (steps 1 and 2) and any of those planned files matches a `never_skip` glob. A peon dispatched by the decision step is protected only by `always`, because it is planned with every changed file and would otherwise be protected by any `never_skip` file in the change, letting the model bypass the budget. Protected peons are never pruned in step 3 and never cut in step 5.
 5. **Budget.** If the plan holds more than `max_peons` peons: keep protected peons; rank the rest by probability descending, with peons that have no probability (decision skipped) ranked after those that do, ties broken by `risk.score` descending then by name; cut the remainder with reason `over budget (max <n>), p=<p>`.
 
-Provider failure: if the decision provider throws after its own retries, step 3 is skipped with reason `decision unavailable: <message>` and steps 4 and 5 still run. The Boss never causes exit 2.
+Provider failure: if the decision provider throws after its own retries, step 3 is skipped with reason `decision unavailable: <message>` and steps 4 and 5 still run. An empty change set skips step 3 as settled. When step 5 cuts a peon that has no probability (the decision step did not run), the reason is `over budget (max <n>)` without a probability clause. The Boss never causes exit 2.
 
 Output additions: `Plan.skipped` entries carry the prune or budget reason; a new optional `Plan.boss` field records `{ provider: "jev" | "llm" | "none", model?: string, risk?: number, probabilities: Record<string, number>, intent?: string, decisionSkipped?: string }`. This field is additive; `PathPlanner` leaves it undefined and nothing in core reads it.
 
