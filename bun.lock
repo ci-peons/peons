@@ -20,6 +20,21 @@
         "@peons/schema": "workspace:*",
       },
     },
+    "packages/boss": {
+      "name": "@peons/boss",
+      "version": "0.1.0",
+      "dependencies": {
+        "@typesafe-ai/sdk": "^0.6.0",
+        "picomatch": "^4.0.2",
+        "yaml": "^2.5.0",
+        "zod": "^4.0.0",
+      },
+      "devDependencies": {
+        "@peons/core": "workspace:*",
+        "@peons/schema": "workspace:*",
+        "@types/picomatch": "^3.0.0",
+      },
+    },
     "packages/cli": {
       "name": "peons",
       "version": "0.1.0",
@@ -134,6 +149,8 @@
 
     "@peons/action": ["@peons/action@workspace:packages/action"],
 
+    "@peons/boss": ["@peons/boss@workspace:packages/boss"],
+
     "@peons/core": ["@peons/core@workspace:packages/core"],
 
     "@peons/mcp": ["@peons/mcp@workspace:packages/mcp"],
@@ -151,6 +168,8 @@
     "@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
 
     "@types/semver": ["@types/semver@7.8.0", "", {}, "sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ=="],
+
+    "@typesafe-ai/sdk": ["@typesafe-ai/sdk@0.6.0", "", {}, "sha512-IddX+Q0XM+VagOUZFeP7wZjaO4SHMdvnh2zEBdrZZnXedWI3BNK1lKhMx3ayrkFWvVLbVcUHJy6AVZlY+e6Jaw=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 

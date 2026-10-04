@@ -1,0 +1,10 @@
+{
+  "name": "@peons/boss",
+  "version": "0.1.0",
+  "description": "The Boss: routes a change to the right peons with triggers, a typed decision model and a budget",
+  "license": "MIT",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@typesafe-ai/sdk": "^0.6.0", "picomatch": "^4.0.2", "yaml": "^2.5.0", "zod": "^4.0.0" },
+  "devDependencies": { "@peons/core": "workspace:*", "@peons/schema": "workspace:*", "@types/picomatch": "^3.0.0" }
+}
