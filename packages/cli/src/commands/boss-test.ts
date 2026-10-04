@@ -13,6 +13,12 @@ export async function bossTestCommand(o: BossTestOpts, ctx: Ctx, deps: { decisio
   const config = await loadConfig(ctx.cwd);
   const cfg = o.provider ? { ...config, boss: { ...config.boss, provider: o.provider as "jev" | "llm" } } : config;
   const provider = deps.decision !== undefined ? deps.decision : selectDecisionProvider(cfg);
+  // An explicit --provider with no key would otherwise score the deterministic path/trigger plan
+  // and report it as that provider's accuracy. Only when no decision provider was injected: a test
+  // passing one in has deliberately bypassed key resolution.
+  if (deps.decision === undefined && o.provider && provider === null) {
+    throw new Error(`no key for --provider ${o.provider}: set ${o.provider === "jev" ? "TYPESAFE_API_KEY" : "PEONS_API_KEY or ANTHROPIC_API_KEY"}`);
+  }
   const r = await bossTest({ root: ctx.cwd, config: cfg, provider, runs: num("--runs", o.runs), minPrecision: num("--min-precision", o.minPrecision), minRecall: num("--min-recall", o.minRecall) });
   if (o.format === "json") { ctx.stdout(JSON.stringify(r, null, 2) + "\n"); return r.passed ? 0 : 1; }
   for (const f of r.fixtures) {

@@ -60,3 +60,20 @@ test("run --auto with boss.always and an empty change set never reaches the prov
   expect(r.peons).toEqual([]);
   expect(r.plan.entries).toEqual([]);
 });
+
+test("boss-test with an explicit --provider and no key fails loudly", async () => {
+  const cwd = repo(); const c = capture();
+  const saved = { t: process.env.TYPESAFE_API_KEY, p: process.env.PEONS_API_KEY, a: process.env.ANTHROPIC_API_KEY };
+  delete process.env.TYPESAFE_API_KEY; delete process.env.PEONS_API_KEY; delete process.env.ANTHROPIC_API_KEY;
+  try {
+    expect(await runCli(["boss-test", "--provider", "jev"], { cwd, ...c }, {})).toBe(2);
+    expect(c.err()).toContain("no key for --provider jev: set TYPESAFE_API_KEY");
+    const c2 = capture();
+    expect(await runCli(["boss-test", "--provider", "llm"], { cwd, ...c2 }, {})).toBe(2);
+    expect(c2.err()).toContain("no key for --provider llm: set PEONS_API_KEY or ANTHROPIC_API_KEY");
+  } finally {
+    if (saved.t !== undefined) process.env.TYPESAFE_API_KEY = saved.t;
+    if (saved.p !== undefined) process.env.PEONS_API_KEY = saved.p;
+    if (saved.a !== undefined) process.env.ANTHROPIC_API_KEY = saved.a;
+  }
+});
