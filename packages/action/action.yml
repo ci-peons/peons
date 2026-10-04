@@ -10,7 +10,7 @@ inputs:
   fail-on: { description: "Override block severity: info | low | medium | high | critical" }
   sarif: { description: "Write peons.sarif for upload-sarif", default: "false" }
   soft-fail: { description: "Turn engine errors (exit 2) into a neutral warning", default: "false" }
-  auto: { description: "Let the Boss choose peons from paths, triggers and the PR title/body", default: "false" }
+  auto: { description: "Let the Boss choose peons. Unset: follow boss.enabled in peons.yaml; true/false: override", default: "" }
 outputs:
   exit-code: { description: "0, 1 or 2" }
   findings: { description: "Number of findings" }

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { diffLinesFromPatch, existingFingerprints, prIntent } from "./review.ts";
+import { diffLinesFromPatch, existingFingerprints, prIntent, resolveAuto } from "./review.ts";
 
 test("collects right-side line numbers from PR patches", () => {
   const m = diffLinesFromPatch([{ filename: "a.tsx", patch: "@@ -1,2 +1,3 @@\n one\n+two\n three" }, { filename: "bin.png" }]);
@@ -29,4 +29,15 @@ test("prIntent joins title and body, undefined when empty", () => {
 // index.ts has no test seam (see the fix report for the grep confirming the call site).
 test("prIntent itself does not redact secrets; that is resolveIntent's job in index.ts", () => {
   expect(prIntent({ title: "Fix", body: 'token = "q8Zk2mN7pL4vX9wR3tY6uB1cD5fG0hJa"' })).toBe('Fix\n\ntoken = "q8Zk2mN7pL4vX9wR3tY6uB1cD5fG0hJa"');
+});
+
+test("resolveAuto: unset follows boss.enabled, true/false override, anything else is invalid", () => {
+  expect(resolveAuto("", true)).toBe(true);
+  expect(resolveAuto("", false)).toBe(false);
+  expect(resolveAuto("true", false)).toBe(true);
+  expect(resolveAuto("TRUE", false)).toBe(true);
+  expect(resolveAuto("false", true)).toBe(false);
+  expect(resolveAuto("False", true)).toBe(false);
+  expect(resolveAuto("yes", false)).toBe("invalid");
+  expect(resolveAuto("1", true)).toBe("invalid");
 });

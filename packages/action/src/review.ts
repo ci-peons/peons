@@ -26,3 +26,14 @@ export function existingFingerprints(comments: Array<{ body: string }>): Set<str
   for (const c of comments) for (const m of c.body.matchAll(MARKER_RE)) s.add(m[1]!);
   return s;
 }
+// The `auto` input is a tri-state string, not a boolean: unset ("") defers to boss.enabled in
+// peons.yaml, "true"/"false" override it, and anything else is a configuration mistake the caller
+// must see rather than have silently read as false (which core.getBooleanInput would not do
+// either -- it throws). Kept pure and here so index.ts's main() need not run to test it.
+export function resolveAuto(input: string, configEnabled: boolean): boolean | "invalid" {
+  const v = input.trim().toLowerCase();
+  if (v === "") return configEnabled;
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return "invalid";
+}
