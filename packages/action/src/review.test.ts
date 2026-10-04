@@ -22,3 +22,11 @@ test("prIntent joins title and body, undefined when empty", () => {
   expect(prIntent({ title: "Fix", body: null })).toBe("Fix");
   expect(prIntent(undefined)).toBeUndefined();
 });
+// prIntent is a pure join with no redaction or truncation of its own: index.ts is responsible for
+// routing its result through @peons/boss's resolveIntent(root, prIntent(pr)) before handing it to
+// the Boss, which is what applies redactText and the 500-char cap (spec §11). This test documents
+// that contract at the pure-function level; the wiring in index.ts is verified separately since
+// index.ts has no test seam (see the fix report for the grep confirming the call site).
+test("prIntent itself does not redact secrets; that is resolveIntent's job in index.ts", () => {
+  expect(prIntent({ title: "Fix", body: 'token = "q8Zk2mN7pL4vX9wR3tY6uB1cD5fG0hJa"' })).toBe('Fix\n\ntoken = "q8Zk2mN7pL4vX9wR3tY6uB1cD5fG0hJa"');
+});

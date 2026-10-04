@@ -3,7 +3,7 @@ import * as github from "@actions/github";
 import { writeFile } from "node:fs/promises";
 import { run, loadConfig, buildReviewPayload, formatSarif, formatAgent, EngineError } from "@peons/core";
 import { SeveritySchema } from "@peons/schema";
-import { BossPlanner, selectDecisionProvider } from "@peons/boss";
+import { BossPlanner, selectDecisionProvider, resolveIntent } from "@peons/boss";
 import { diffLinesFromPatch, existingFingerprints, prIntent } from "./review.ts";
 
 async function git(args: string[]): Promise<void> {
@@ -32,7 +32,7 @@ async function main() {
   const scope = scopeIn === "staged" ? { kind: "staged" as const } : { kind: "branch" as const, base: base ? `origin/${base}` : undefined };
   const auto = core.getBooleanInput("auto");
   const config = auto ? await loadConfig(process.cwd()) : undefined;
-  const planner = auto && config ? new BossPlanner({ provider: selectDecisionProvider(config), intent: prIntent(pr) }) : undefined;
+  const planner = auto && config ? new BossPlanner({ provider: selectDecisionProvider(config), intent: await resolveIntent(process.cwd(), prIntent(pr)) }) : undefined;
   const result = await run({ root: process.cwd(), scope, names: names.length ? names : undefined, failOn, surface: "ci", planner, config });
   core.info(formatAgent(result));
   core.setOutput("exit-code", String(result.exit)); core.setOutput("findings", String(result.findings.length));
