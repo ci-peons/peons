@@ -26,7 +26,7 @@ test("plan --auto dispatches by intent and prints the boss footer", async () => 
   const cwd = repo(); const c = capture();
   expect(await runCli(["plan", "--auto", "--intent", "Add a query", "--scope", "files", "a.tsx"], { cwd, ...c }, { decision })).toBe(0);
   expect(c.out()).toContain("sql"); expect(c.out()).toContain("intent p=0.88");
-  expect(c.out()).toMatch(/Boss: provider=fake model=fake risk=2(\.0+)? decision=made/);
+  expect(c.out()).toMatch(/Boss: provider=fake model=fake risk=2\.00 decision=made/);
 });
 test("plan without --auto is unchanged; boss.enabled implies --auto; --no-auto disables", async () => {
   const c1 = capture(); expect(await runCli(["plan", "--scope", "files", "a.tsx"], { cwd: repo(), ...c1 }, { decision })).toBe(0); expect(c1.out()).not.toContain("Boss:");

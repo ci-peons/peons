@@ -17,8 +17,10 @@ export async function choosePlanner(config: ResolvedConfig, o: AutoOpts, deps: {
 }
 export function formatBossFooter(b?: BossInfo): string {
   if (!b) return "";
-  const decision = b.decisionSkipped ? `skipped (${b.decisionSkipped})` : "made";
-  return `Boss: provider=${b.provider}${b.model ? ` model=${b.model}` : ""}${b.risk !== undefined ? ` risk=${b.risk}` : ""} decision=${decision}\n`;
+  // "decision skipped: plan settled" would read as "decision=skipped (decision skipped: ...)".
+  const why = b.decisionSkipped?.replace(/^decision skipped: /, "");
+  const decision = why ? `skipped (${why})` : "made";
+  return `Boss: provider=${b.provider}${b.model ? ` model=${b.model}` : ""}${b.risk !== undefined ? ` risk=${b.risk.toFixed(2)}` : ""} decision=${decision}\n`;
 }
 export async function plan(files: string[], opts: { scope?: string; base?: string; format?: string; auto?: boolean; intent?: string }, ctx: Ctx, deps: { decision?: DecisionProvider | null } = {}): Promise<number> {
   const cfg = await loadConfig(ctx.cwd);

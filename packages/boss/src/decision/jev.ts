@@ -17,7 +17,9 @@ export class JevDecisionProvider implements DecisionProvider {
   private model: string;
   constructor(opts: { apiKey?: string; model?: string; fetch?: typeof fetch } = {}) {
     this.model = opts.model ?? "jev-latest";
-    this.client = new TypeSafeClient({ apiKey: opts.apiKey ?? resolveJevKey(), ...(opts.fetch ? { fetch: opts.fetch as never } : {}) });
+    // The SDK retries on its own and logs to stdout while doing so, which would corrupt
+    // `--format json` output from plan/run/boss-test.
+    this.client = new TypeSafeClient({ apiKey: opts.apiKey ?? resolveJevKey(), logLevel: "off", ...(opts.fetch ? { fetch: opts.fetch as never } : {}) });
   }
   async decide(state: unknown, questions: Record<string, DecisionQuestion>): Promise<DecisionResult> {
     let res: { answers: Record<string, unknown>; model: string; usage?: Record<string, number> };

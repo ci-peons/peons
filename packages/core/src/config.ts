@@ -61,11 +61,6 @@ export type BossConfig = {
   budget: { maxPeons: number }; always: string[]; neverSkip: string[];
   thresholds: { dispatch: number; prune: number };
 };
-export const DEFAULT_BOSS: BossConfig = {
-  enabled: false, provider: "auto", model: "jev-latest",
-  budget: { maxPeons: 5 }, always: [], neverSkip: [],
-  thresholds: { dispatch: 0.7, prune: 0.15 },
-};
 export type ResolvedConfig = {
   root: string; provider: "anthropic"; models: Record<ModelTier, string>;
   budget: { tokensPerPeon: number }; journal: boolean; peons: ResolvedPeon[]; boss: BossConfig;

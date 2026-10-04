@@ -58,7 +58,8 @@ jobs:
           PEONS_API_KEY: ${{ secrets.PEONS_API_KEY }}
         run: bun packages/cli/src/index.ts boss-test --format json > boss-test.json
       - uses: actions/upload-artifact@v4
-        if: steps.changed.outputs.skip != 'true'
+        # A failing score is exactly when the JSON is wanted, so upload it either way.
+        if: always()
         with:
           name: peons-test
           path: |
