@@ -15,6 +15,12 @@ const CONTAINED_MESSAGE = 'globs must be relative to the repository and must not
 const GlobString = z.string().min(1).refine(isContainedGlob, { message: CONTAINED_MESSAGE });
 const Globs = z.array(GlobString).min(1);
 
+export function isValidTrigger(p: string): boolean {
+  if (p.length === 0 || p.length > 200) return false;
+  try { new RegExp(p); return true; } catch { return false; }
+}
+const Trigger = z.string().refine(isValidTrigger, { message: "trigger must be a valid regular expression of at most 200 characters" });
+
 export const PeonManifestSchema = z.object({
   name: z.string().refine((n) => validatePeonName(n).ok, { message: "invalid peon name" }),
   version: z.string().refine((v) => semver.valid(v) !== null, { message: "version must be semver" }),
@@ -27,6 +33,7 @@ export const PeonManifestSchema = z.object({
     tests: z.array(GlobString).default([]),
   }).default({ docs: [], tests: [] }),
   model: z.object({ tier: ModelTierSchema.default("fast") }).default({ tier: "fast" }),
+  triggers: z.array(Trigger).max(32).default([]),
 }).superRefine((m, ctx) => {
   if (!atLeast(m.severity.block, m.severity.default)) {
     ctx.addIssue({ code: "custom", path: ["severity", "block"], message: "block must be at or above default" });

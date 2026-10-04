@@ -1,7 +1,11 @@
 import type { Finding } from "./finding.ts";
 export type Usage = { inputTokens: number; outputTokens: number; cacheReadTokens: number; costUsd?: number };
 export type PlanEntry = { peon: string; files: Array<{ path: string; reason: string }> };
-export type Plan = { entries: PlanEntry[]; skipped: Array<{ peon: string; reason: string }> };
+export type BossInfo = {
+  provider: "jev" | "llm" | "fake" | "none"; model?: string; risk?: number;
+  probabilities: Record<string, number>; intent?: string; decisionSkipped?: string;
+};
+export type Plan = { entries: PlanEntry[]; skipped: Array<{ peon: string; reason: string }>; boss?: BossInfo };
 export type PeonRunStatus = {
   name: string; version: string; status: "ok" | "cached" | "error" | "skipped";
   error?: string; usage?: Usage; durationMs: number; findings: number;

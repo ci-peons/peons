@@ -37,3 +37,10 @@ test("globs must stay inside the repository", () => {
     expect(PeonManifestSchema.safeParse({ ...base, paths: [ok], permissions: { read: [ok] } }).success).toBe(true);
   }
 });
+test("triggers default empty, validate as regexes, cap count and length", () => {
+  expect(PeonManifestSchema.parse(base).triggers).toEqual([]);
+  expect(PeonManifestSchema.safeParse({ ...base, triggers: ["dangerouslySetInnerHTML", "\\bexec\\("] }).success).toBe(true);
+  expect(PeonManifestSchema.safeParse({ ...base, triggers: ["(unclosed"] }).success).toBe(false);
+  expect(PeonManifestSchema.safeParse({ ...base, triggers: Array(33).fill("a") }).success).toBe(false);
+  expect(PeonManifestSchema.safeParse({ ...base, triggers: ["a".repeat(201)] }).success).toBe(false);
+});
