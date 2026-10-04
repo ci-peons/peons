@@ -4,3 +4,5 @@ node_modules/
 .peons/journal/
 .superpowers/
 packages/*/dist/
+.env
+.env.*
